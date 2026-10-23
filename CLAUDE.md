@@ -38,6 +38,11 @@ Why it exists: the owner (John) is a systems/embedded C programmer. His own inte
 | Pre-existing frontend/backend code yields to what was planned in the design sessions | John deleted the old backend; old Dashboard was replaced. |
 | v1 exercise screen: **no hint button**, **soft countdown timer** (red when over, never auto-submits), **full file shown by default** (collapse is opt-in) | John, 2026-10-13. Hiding code could hide bugs. |
 | LLM judge: use a **free** option if one is found; otherwise hold off (FakeJudge only) | John, 2026-10-13. None found yet (no Ollama etc. installed). |
+| **MVP scope on branch `danny-v0`: the API realm**, starting with a **payments-infrastructure** track (roles like those at Stripe, Adyen, Square...). Generic names, never a company's code or branding | Danny, 2026-10-22. Reproduce industry-level problems an engineer meets day to day. C/systems stays as a hidden track so 001 remains valid. |
+| **Tags are a controlled vocabulary** in `taxonomy/taxonomy.json`: track > area > skill. Users browse by track and area; **skills (bug classes) live only in `key.json`** per bug and are shown after submitting (Lichess themes) | Danny, 2026-10-22. Skill tags on the public problem would give the bugs away. |
+| Difficulty has two axes: **`rung` 1-5** (how much code you hold in your head) and symptom-to-cause distance | Danny, 2026-10-22. From the research doc's ladder. |
+| New question types: **incident ticket**, **review the PR** (a correct PR is a valid "approve"), **trace** (multiple choice, distractors built from common misreads). A separate mode from the bug hunt | Danny, 2026-10-22. Things self-prep with an AI cannot give: not knowing what is wrong, "nothing is wrong" answers. |
+| **No AI for the candidate** in this version. A later AI-assisted mode uses only problems the pilot solve fails | Danny, 2026-10-22. |
 
 ## 3. What exists today (inventory)
 
@@ -56,13 +61,15 @@ Copy these into the repo (suggested layout, section 4). Paths below are where th
 
 ```
 CLAUDE.md  requirements.txt  pytest.ini     # pytest runs tests/ and backend/tests/
-schemas/                 # public, key, manifest, submission, grading-report .schema.json
+schemas/                 # public, key, manifest, submission, grading-report, taxonomy .schema.json
+taxonomy/taxonomy.json   # tracks > areas > skills, plus non-revealing public topics (section 5)
 tools/
   validate_example.py    # section 6
   sync_public.py         # copies ONLY public.json + listed code/ files into frontend/public/exercises/ (temporary, until the API serves them)
   (future) run_gates.py, mutate.py, build_manifest.py
 tests/                   # validator tamper tests, sync leak tests
-examples/readcode-001/
+examples/readcode-001/   # C LRU cache (track: systems, hidden from the MVP)
+examples/readcode-002/   # Python/FastAPI charges API, 4 mutation bugs, pytest gates (track: payments-infra)
 backend/
   grader/                # section 9; plain Python, no web framework
   tests/                 # grader tests + fixtures (strong/weak sample submissions)
@@ -94,8 +101,12 @@ readcode-NNN/
     evidence/        # one file per gate result (B1.txt ... gate_a.txt)
 ```
 
+**Tags (added 2026-10-22).** `public.json` has `track`, `area` (must belong to the track), `rung` 1-5 and `topics` (taxonomy topics only; a skill id there is an error). Each `key.json` bug has `skills[]`. The validator checks all of these against `taxonomy/taxonomy.json`, rejects a taxonomy whose skill and topic ids overlap, and warns when the public text names a skill one of the bugs is tagged with (unless the code itself uses that word).
+
+**Tasks (added 2026-10-22).** Optional `public.tasks[]` (`T#`, type `incident | review_pr | trace`, with `diff` or `options`) and matching `key.tasks[]` (`answer_bug_ids`, `verdict`+`has_defect`+`anchors`, or `correct_option`+`distractors`). Not scored or shown by the UI yet; incident and PR tasks can point at bugs, so show them as a separate mode, never next to the open bug hunt.
+
 **Conventions**
-- IDs: example `readcode-NNN` (folder name must match), questions `C#`, design prompts `D#`, bugs `B#`.
+- IDs: example `readcode-NNN` (folder name must match), questions `C#`, design prompts `D#`, bugs `B#`, tasks `T#`.
 - `public.files[].path`, `key.bugs[].locations[].file`, and `manifest.shipped[].path` are **relative to `code/`**. `manifest.baseline.path` and all `evidence_file` values are **relative to the example root**.
 - `manifest.bugs[].change.old` = clean text (must occur in the baseline). `change.new` = bugged text (must occur in the shipped code starting exactly at `line`). `line` must fall inside one of the key's locations for that bug.
 - `manifest.shipped[].sha256` / `baseline.sha256` pin the files. **Editing shipped code invalidates the gates; rerun them and rebuild the manifest.**
@@ -194,6 +205,8 @@ Original plan: deterministic layer matches bug locations (line overlap/function)
 5. Generalize: a `build_manifest.py` that assembles `manifest.json` from mutation records and gate results; a generic mutation runner (operators + kill check + equivalent-mutant discard).
 6. Add a citation check (gate C) and the pilot-solve step; then the review step and publish flow.
 7. Only then: DB design, backend API (serve public part only), UI implementation from the mockup. **Ask John before choosing a web stack** (undecided).
+
+**Progress (2026-10-22, `danny-v0`):** taxonomy + tag/task checks in the validator with tamper tests; 001 retagged; `readcode-002` built by mutation (`internal/verification/run_gates.py` regenerates `code/`, evidence and the manifest's baseline/shipped/bugs; gate A passes, B1-B4 detected by pytest). `.gitattributes` pins LF in `examples/` (Windows CRLF checkout broke the sha256 pins). Not done: UI for tasks and tags, grader support for tasks, a human review and pilot solve of 002.
 
 **Progress (2026-10-13):** step 1 done (validator passes, tamper tests). Step 4 partly done (submission schema, grader scaffold, strong/weak fixtures but no expected scores). Step 7 partly done (stack chosen, exercise screen built against static files). Steps 2, 3, 5, 6 not started. Steps 3 and calibration are blocked on files missing from John's downloads (kernel prototype, calibration-a).
 

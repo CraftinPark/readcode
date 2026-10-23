@@ -26,7 +26,9 @@ except ImportError:
     sys.exit("This tool needs the 'jsonschema' package:  pip install jsonschema")
 
 FILES = ("public", "key", "manifest")
-KEY_ONLY_FIELDS = {"key_points", "anchors", "mechanism_anchors", "red_herrings", "fix", "grader_instructions"}
+KEY_ONLY_FIELDS = {"key_points", "anchors", "mechanism_anchors", "red_herrings", "fix", "grader_instructions",
+                   "skills", "answer_bug_ids", "verdict", "has_defect", "correct_option", "distractors"}
+DEFAULT_TAXONOMY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "taxonomy", "taxonomy.json")
 HINT_WORDS = re.compile(r"\b(BUG|FIXME|XXX|HACK|seeded|mutant|injected|vulnerab\w*)\b", re.I)
 
 
@@ -64,6 +66,107 @@ def load_schemas(schema_dir):
         Draft202012Validator.check_schema(schema)
         out[n] = Draft202012Validator(schema, format_checker=FormatChecker())
     return out
+
+
+class Taxonomy:
+    """taxonomy.json indexed by id. `errors` lists problems with the taxonomy itself."""
+
+    def __init__(self, doc, errors):
+        self.doc, self.errors = doc, errors
+        self.tracks = {t["id"]: t for t in doc.get("tracks", [])}
+        self.areas = {a["id"]: a for a in doc.get("areas", [])}
+        self.skills = {s["id"] for s in doc.get("skills", [])}
+        self.topics = {t["id"] for t in doc.get("topics", [])}
+
+
+def load_taxonomy(path=DEFAULT_TAXONOMY, schema_dir=None):
+    schema_dir = schema_dir or os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "schemas")
+    with open(os.path.join(schema_dir, "taxonomy.schema.json"), encoding="utf-8") as f:
+        v = Draft202012Validator(json.load(f))
+    with open(path, encoding="utf-8") as f:
+        doc = json.load(f)
+    errs = [f"taxonomy [{'/'.join(map(str, e.path)) or '(root)'}]: {e.message[:200]}" for e in v.iter_errors(doc)]
+    if errs:
+        return Taxonomy({}, errs)
+    for label in ("tracks", "areas", "skills", "topics"):
+        ids = [x["id"] for x in doc[label]]
+        if len(ids) != len(set(ids)):
+            errs.append(f"taxonomy.{label}: duplicate ids")
+    tax = Taxonomy(doc, errs)
+    if tax.skills & tax.topics:
+        errs.append(f"taxonomy: ids used as both skill and topic (topics must not reveal skills): {sorted(tax.skills & tax.topics)}")
+    for a in doc["areas"]:
+        if a["track"] not in tax.tracks:
+            errs.append(f"taxonomy.areas[{a['id']}]: unknown track '{a['track']}'")
+        unknown = sorted(set(a["skills"]) - tax.skills)
+        if unknown:
+            errs.append(f"taxonomy.areas[{a['id']}]: unknown skills {unknown}")
+    return tax
+
+
+def check_tags(rep, tax, pub, key, code_text=""):
+    """Track/area/topics in public.json and per-bug skills in key.json must come from the taxonomy.
+    A skill named in the public text is a hint, unless the code itself already uses the word."""
+    for e in tax.errors:
+        rep.err("taxonomy", e)
+    if tax.errors:
+        return
+    if pub["track"] not in tax.tracks:
+        rep.err("public.track", f"unknown track '{pub['track']}'")
+    area = tax.areas.get(pub["area"])
+    if area is None:
+        rep.err("public.area", f"unknown area '{pub['area']}'")
+    elif area["track"] != pub["track"]:
+        rep.err("public.area", f"area '{pub['area']}' belongs to track '{area['track']}', not '{pub['track']}'")
+    for t in pub["topics"]:
+        if t in tax.skills:
+            rep.err("public.topics", f"'{t}' is a skill; skills reveal the bugs and belong in key.json only")
+        elif t not in tax.topics:
+            rep.err("public.topics", f"unknown topic '{t}'")
+    used = set()
+    for b in key["bugs"]:
+        unknown = sorted(set(b["skills"]) - tax.skills)
+        if unknown:
+            rep.err(f"key.bugs[{b['id']}]", f"unknown skills {unknown}")
+        used |= set(b["skills"])
+    if area is not None:
+        outside = sorted((used & tax.skills) - set(area["skills"]))
+        if outside:
+            rep.warn("key.bugs", f"skills not listed for area '{area['id']}': {outside} (add them to the area or retag)")
+    text = " ".join([pub["title"]] + [q["text"] for q in pub["questions"] + pub["design_prompts"] + pub.get("tasks", [])]).lower()
+    for s in sorted(used & tax.skills):
+        word = rf"\b{re.escape(s.replace('-', ' '))}\b|\b{re.escape(s)}\b"
+        if re.search(word, text) and not re.search(word, code_text.lower()):
+            rep.warn("public.json", f"names the skill '{s}' that one of its bugs is tagged with; this may give the bug away")
+
+
+def check_tasks(rep, pub, key):
+    ptasks = {t["id"]: t for t in pub.get("tasks", [])}
+    ktasks = {t["task_id"]: t for t in key.get("tasks", [])}
+    if len(ptasks) != len(pub.get("tasks", [])) or len(ktasks) != len(key.get("tasks", [])):
+        rep.err("tasks", "duplicate task ids")
+    if set(ptasks) != set(ktasks):
+        rep.err("tasks", f"public has {sorted(ptasks)} but key answers {sorted(ktasks)}")
+    bug_ids = {b["id"] for b in key["bugs"]}
+    for tid in sorted(set(ptasks) & set(ktasks)):
+        p, k, where = ptasks[tid], ktasks[tid], f"key.tasks[{tid}]"
+        if p["type"] != k["type"]:
+            rep.err(where, f"type is '{k['type']}' in the key but '{p['type']}' in public")
+            continue
+        if k["type"] == "incident":
+            unknown = sorted(set(k["answer_bug_ids"]) - bug_ids)
+            if unknown:
+                rep.err(where, f"answer_bug_ids {unknown} are not bugs in the key")
+        elif k["type"] == "review_pr":
+            if (k["verdict"] == "approve") == k["has_defect"]:
+                rep.err(where, "verdict and has_defect contradict each other")
+        elif k["type"] == "trace":
+            opts = {o["id"] for o in p["options"]}
+            if k["correct_option"] not in opts:
+                rep.err(where, f"correct_option '{k['correct_option']}' is not one of the options {sorted(opts)}")
+            bad = sorted(set(k["distractors"]) - (opts - {k["correct_option"]}))
+            if bad:
+                rep.err(where, f"distractors {bad} are not wrong options")
 
 
 def check_shape(rep, validators, docs):
@@ -234,7 +337,8 @@ def check_consistency(rep, ex, pub, key, man):
                 rep.err("public.json", f"contains an answer key point verbatim: {kp[:50]!r}")
 
 
-def validate(ex, validators):
+def validate(ex, validators, taxonomy=None):
+    taxonomy = taxonomy or load_taxonomy()
     rep, docs = Report(), {}
     for n in FILES:
         p = os.path.join(ex, f"{n}.json")
@@ -250,6 +354,10 @@ def validate(ex, validators):
         check_shape(rep, validators, docs)
         if not rep.errors:                       # consistency checks assume the shape is right
             check_consistency(rep, ex, docs["public"], docs["key"], docs["manifest"])
+            code_text = "\n".join(open(os.path.join(ex, "code", f["path"]), encoding="utf-8", errors="replace").read()
+                                  for f in docs["public"]["files"] if os.path.isfile(os.path.join(ex, "code", f["path"])))
+            check_tags(rep, taxonomy, docs["public"], docs["key"], code_text)
+            check_tasks(rep, docs["public"], docs["key"])
     return rep
 
 
@@ -258,6 +366,7 @@ def main():
     ap.add_argument("dirs", nargs="*", help="example folders")
     ap.add_argument("--all", metavar="ROOT", help="validate every sub-folder of ROOT that has a manifest.json")
     ap.add_argument("--schemas", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "schemas"))
+    ap.add_argument("--taxonomy", default=DEFAULT_TAXONOMY)
     a = ap.parse_args()
     dirs = list(a.dirs)
     if a.all:
@@ -266,9 +375,10 @@ def main():
     if not dirs:
         ap.error("give at least one example folder, or --all ROOT")
     validators = load_schemas(a.schemas)
+    taxonomy = load_taxonomy(a.taxonomy, a.schemas)
     bad = 0
     for ex in dirs:
-        rep = validate(ex, validators)
+        rep = validate(ex, validators, taxonomy)
         print(f"{'FAIL' if rep.errors else 'OK  '}  {ex}  ({len(rep.errors)} errors, {len(rep.warnings)} warnings)")
         for m in rep.errors:
             print(f"   ERROR  {m}")

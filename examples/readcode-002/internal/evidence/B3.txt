@@ -1,0 +1,22 @@
+== B3 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.43s
+
+== B3 on shipped: FAIL
+F                                                                        [100%]
+================================== FAILURES ===================================
+__________________ test_B3_idempotency_keys_are_per_account ___________________
+
+client = <starlette.testclient.TestClient object at 0x00000233D67382F0>
+
+    def test_B3_idempotency_keys_are_per_account(client):
+        theirs = charge(client, B, 1000, key="order-1").json()
+        mine = charge(client, A, 1000, key="order-1")
+        assert mine.status_code == 200
+>       assert mine.json()["id"] != theirs["id"]
+E       AssertionError: assert 'ch_000001' != 'ch_000001'
+
+internal\verification\test_gates.py:70: AssertionError
+=========================== short test summary info ===========================
+FAILED internal\verification\test_gates.py::test_B3_idempotency_keys_are_per_account
+1 failed in 0.58s

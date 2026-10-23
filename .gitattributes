@@ -1,0 +1,2 @@
+# Example files are pinned by sha256 in manifest.json; never convert their line endings.
+examples/** text eol=lf

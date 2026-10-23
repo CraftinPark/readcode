@@ -13,18 +13,23 @@ _spec.loader.exec_module(sp)
 def test_only_public_files_are_copied(tmp_path):
     out = tmp_path / "out"
     index = sp.sync(ROOT / "examples", out)
-    assert [e["id"] for e in index] == ["readcode-001"]
+    assert [e["id"] for e in index] == ["readcode-001", "readcode-002"]
     files = sorted(p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file())
-    assert files == ["index.json", "readcode-001/code/lru_cache.c", "readcode-001/public.json"]
+    assert files == ["index.json", "readcode-001/code/lru_cache.c", "readcode-001/public.json",
+                     "readcode-002/code/payments_api.py", "readcode-002/public.json"]
 
 
 def test_key_content_never_reaches_the_frontend(tmp_path):
     out = tmp_path / "out"
     sp.sync(ROOT / "examples", out)
-    key = json.loads((ROOT / "examples" / "readcode-001" / "key.json").read_text())
-    blob = "".join(p.read_text() for p in out.rglob("*.json"))
-    for b in key["bugs"]:
-        assert b["description"] not in blob and b["fix"] not in blob
+    blob = "".join(p.read_text(encoding="utf-8") for p in out.rglob("*.json"))
+    for key_path in (ROOT / "examples").glob("*/key.json"):
+        key = json.loads(key_path.read_text(encoding="utf-8"))
+        for b in key["bugs"]:
+            assert b["description"] not in blob and b["fix"] not in blob
+        for t in key.get("tasks", []):
+            for answer in t.get("anchors", []) + list(t.get("distractors", {}).values()):
+                assert answer not in blob
 
 
 def test_stray_files_in_code_are_not_copied(tmp_path):

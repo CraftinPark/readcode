@@ -56,6 +56,9 @@
       "severity": "critical",
       "weight": 6,
       "category": "memory-safety",
+      "skills": [
+        "memory-safety"
+      ],
       "locations": [
         {
           "file": "lru_cache.c",
@@ -78,6 +81,9 @@
       "severity": "critical",
       "weight": 6,
       "category": "memory-safety",
+      "skills": [
+        "memory-safety"
+      ],
       "locations": [
         {
           "file": "lru_cache.c",
@@ -100,6 +106,9 @@
       "severity": "critical",
       "weight": 6,
       "category": "logic / resource-accounting",
+      "skills": [
+        "resource-management"
+      ],
       "locations": [
         {
           "file": "lru_cache.c",
@@ -129,6 +138,10 @@
       "severity": "high",
       "weight": 5,
       "category": "memory-safety / buffer",
+      "skills": [
+        "memory-safety",
+        "input-validation"
+      ],
       "locations": [
         {
           "file": "lru_cache.c",
@@ -158,6 +171,9 @@
       "severity": "medium",
       "weight": 4,
       "category": "logic",
+      "skills": [
+        "caching"
+      ],
       "locations": [
         {
           "file": "lru_cache.c",
@@ -180,6 +196,9 @@
       "severity": "medium",
       "weight": 3,
       "category": "resource-management",
+      "skills": [
+        "resource-management"
+      ],
       "locations": [
         {
           "file": "lru_cache.c",
@@ -202,6 +221,9 @@
       "severity": "medium",
       "weight": 3,
       "category": "resource-management",
+      "skills": [
+        "resource-management"
+      ],
       "locations": [
         {
           "file": "lru_cache.c",
@@ -223,6 +245,10 @@
       "severity": "high",
       "weight": 4,
       "category": "arithmetic / concurrency",
+      "skills": [
+        "integer-arithmetic",
+        "race-condition"
+      ],
       "locations": [
         {
           "file": "lru_cache.c",
@@ -246,6 +272,9 @@
       "severity": "medium",
       "weight": 2,
       "category": "input validation",
+      "skills": [
+        "input-validation"
+      ],
       "locations": [
         {
           "file": "lru_cache.c",
@@ -279,6 +308,9 @@
       "severity": "low",
       "weight": 1,
       "category": "edge case",
+      "skills": [
+        "input-validation"
+      ],
       "locations": [
         {
           "file": "lru_cache.c",

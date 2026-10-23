@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "id": "readcode-002",
+  "version": 1,
+  "title": "Charges API for a payments platform",
+  "language": "python",
+  "difficulty": "medium",
+  "track": "payments-infra",
+  "area": "payments-core",
+  "rung": 3,
+  "topics": [
+    "api",
+    "payments",
+    "multi-tenant"
+  ],
+  "estimated_minutes": 35,
+  "files": [
+    {
+      "path": "payments_api.py",
+      "line_count": 239
+    }
+  ],
+  "license": {
+    "spdx": "LicenseRef-ReadCode-Original",
+    "attribution": "Written for ReadCode. Not affiliated with any payments company."
+  },
+  "questions": [
+    {
+      "id": "C1",
+      "text": "Walk through what POST /charges does when the request carries an Idempotency-Key header that this account has already used. Cover both the same body and a different body."
+    },
+    {
+      "id": "C2",
+      "text": "Why are amounts integers in the currency's minor unit? Give one concrete thing that would go wrong if they were floats in dollars."
+    },
+    {
+      "id": "C3",
+      "text": "In what order does GET /charges return charges, what does starting_after mean, and how does the caller know there are more?"
+    },
+    {
+      "id": "C4",
+      "text": "A declined card and an unsupported currency both fail. How does the API respond to each, and which of them leaves a record behind?"
+    }
+  ],
+  "design_prompts": [
+    {
+      "id": "D1",
+      "text": "Saved responses live in a dict in process memory and are forgotten after 24 hours. What breaks when this service runs on several servers or restarts, and what would you use instead?"
+    },
+    {
+      "id": "D2",
+      "text": "list_charges takes a starting_after charge id rather than a page number or an offset. Why might an API used by many merchants choose this, and what does it cost?"
+    },
+    {
+      "id": "D3",
+      "text": "create_charge holds store.lock while it asks the card network to approve the payment. What happens to this service under load, and how would you restructure it?"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "type": "incident",
+      "text": "Support ticket #4471 (Acme): \"Charge ch_000812 was for $10.00, but the dashboard shows $14.00 refunded. Our agents issued two refunds of $7.00 about 30 minutes apart. How did the second one go through?\" Find the cause in the code and explain it."
+    },
+    {
+      "id": "T2",
+      "type": "incident",
+      "text": "Support ticket #4502 (Acme): \"Our checkout got back ch_000377 with status succeeded, but the customer was never charged, and ch_000377 does not appear when we list our charges. Our client retries POST /charges with the order number as the Idempotency-Key.\" Find the cause in the code and explain it."
+    },
+    {
+      "id": "T3",
+      "type": "review_pr",
+      "text": "A teammate opened this PR to fix ticket #4471. Approve it, or request changes and say why.",
+      "diff": "--- a/payments_api.py\n+++ b/payments_api.py\n@@ create_refund\n             amount = body.amount if body.amount is not None else charge.amount - charge.amount_refunded\n-            if amount > charge.amount:\n+            if amount >= charge.amount - charge.amount_refunded:\n                 raise api_error(400, \"amount_too_large\",\n"
+    },
+    {
+      "id": "T4",
+      "type": "review_pr",
+      "text": "Finance asked for a refund window. This PR rejects refunds on charges older than 180 days. Approve it, or request changes and say why.",
+      "diff": "--- a/payments_api.py\n+++ b/payments_api.py\n@@\n IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60\n+REFUND_WINDOW_SECONDS = 180 * 24 * 60 * 60\n@@ create_refund\n             if charge.status != \"succeeded\":\n                 raise api_error(400, \"charge_not_refundable\", \"Only succeeded charges can be refunded.\")\n+            if time.time() - charge.created > REFUND_WINDOW_SECONDS:\n+                raise api_error(400, \"charge_too_old\", \"Charges older than 180 days cannot be refunded.\")\n             amount = body.amount if body.amount is not None else charge.amount - charge.amount_refunded\n"
+    },
+    {
+      "id": "T5",
+      "type": "trace",
+      "text": "Acme sends POST /charges {amount: 1000, currency: \"usd\", payment_method: \"pm_card_visa\"} with Idempotency-Key: k1 and gets ch_000001. It then refunds 400 of it. Ten minutes later its client retries the exact same POST with Idempotency-Key: k1. What comes back?",
+      "options": [
+        {
+          "id": "a",
+          "text": "200, ch_000001 with amount_refunded 400"
+        },
+        {
+          "id": "b",
+          "text": "200, ch_000001 with amount_refunded 0"
+        },
+        {
+          "id": "c",
+          "text": "409 idempotency_key_reused"
+        },
+        {
+          "id": "d",
+          "text": "200, a new charge ch_000003"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "id": "readcode-002",
+  "version": 1,
+  "scoring": {
+    "total": 100,
+    "sections": {
+      "comprehension": 20,
+      "bugs": 40,
+      "design": 25,
+      "improvements": 15
+    }
+  },
+  "comprehension": [
+    {
+      "question_id": "C1",
+      "weight": 5,
+      "key_points": [
+        "looks up the saved response by the key (scoped to the account in a correct implementation)",
+        "same body: returns the saved status code and body without charging again",
+        "different body: request hash differs, returns 409 idempotency_key_reused",
+        "saved responses expire after 24 hours"
+      ]
+    },
+    {
+      "question_id": "C2",
+      "weight": 5,
+      "key_points": [
+        "integers avoid binary floating point rounding",
+        "0.1 + 0.2 style drift makes refunds and totals not add up exactly",
+        "minor units match how card networks and banks represent amounts"
+      ]
+    },
+    {
+      "question_id": "C3",
+      "weight": 5,
+      "key_points": [
+        "newest first, ordered by an increasing sequence number",
+        "starting_after is the id of the last charge on the previous page; the next page starts after it",
+        "has_more is true when more charges remain after this page"
+      ]
+    },
+    {
+      "question_id": "C4",
+      "weight": 5,
+      "key_points": [
+        "declined card returns 402 and stores a charge with status failed and a failure_code",
+        "unsupported currency returns 400 before anything is stored",
+        "only the decline leaves a charge record (and a saved idempotent response)"
+      ]
+    }
+  ],
+  "bugs": [
+    {
+      "id": "B1",
+      "title": "Charges are looked up without checking which account owns them",
+      "severity": "critical",
+      "weight": 10,
+      "category": "authorization",
+      "skills": [
+        "tenant-isolation"
+      ],
+      "locations": [
+        {
+          "file": "payments_api.py",
+          "function": "load_charge",
+          "start_line": 154,
+          "end_line": 158
+        }
+      ],
+      "description": "load_charge only checks that the charge exists. Any authenticated account can retrieve, refund, or use as a cursor a charge that belongs to another account by guessing its sequential id.",
+      "mechanism_anchors": [
+        "no check that charge.account_id equals the caller's account",
+        "ids are sequential so they are easy to guess",
+        "affects retrieve, refund and the starting_after cursor",
+        "should return 404 rather than 403 to avoid confirming the id exists"
+      ],
+      "fix": "if charge is None or charge.account_id != account.id: raise 404"
+    },
+    {
+      "id": "B2",
+      "title": "Refund limit ignores what has already been refunded",
+      "severity": "critical",
+      "weight": 10,
+      "category": "money",
+      "skills": [
+        "money-invariants"
+      ],
+      "locations": [
+        {
+          "file": "payments_api.py",
+          "function": "create_refund",
+          "start_line": 225,
+          "end_line": 230
+        }
+      ],
+      "description": "The over-refund check compares the new refund with the original charge amount instead of the amount still refundable, so several partial refunds can add up to more than was charged. Once amount_refunded exceeds amount, a refund with no amount computes a negative amount.",
+      "mechanism_anchors": [
+        "compares against charge.amount, not charge.amount - charge.amount_refunded",
+        "two partial refunds of 700 on a 1000 charge both succeed",
+        "the error message talks about what is left but the condition does not",
+        "default full refund becomes negative after an over-refund"
+      ],
+      "fix": "if amount > charge.amount - charge.amount_refunded: raise amount_too_large"
+    },
+    {
+      "id": "B3",
+      "title": "Idempotency keys are shared across accounts",
+      "severity": "high",
+      "weight": 12,
+      "category": "idempotency",
+      "skills": [
+        "idempotency",
+        "tenant-isolation"
+      ],
+      "locations": [
+        {
+          "file": "payments_api.py",
+          "function": "create_charge",
+          "start_line": 182,
+          "end_line": 202
+        }
+      ],
+      "description": "Saved responses are stored under the raw Idempotency-Key, not (account, key). When two merchants use the same key, for example an order number, the second merchant gets the first merchant's charge back: its customer is never charged and it receives another account's data.",
+      "mechanism_anchors": [
+        "scope is the key alone, not (account.id, key)",
+        "keys like order numbers collide across merchants",
+        "the replay returns another account's charge body (data leak)",
+        "the second merchant's card is never charged",
+        "the request hash only covers the body, so identical bodies replay instead of 409"
+      ],
+      "fix": "scope = (account.id, idempotency_key)"
+    },
+    {
+      "id": "B4",
+      "title": "The cursor charge is included again on the next page",
+      "severity": "medium",
+      "weight": 8,
+      "category": "pagination",
+      "skills": [
+        "pagination"
+      ],
+      "locations": [
+        {
+          "file": "payments_api.py",
+          "function": "list_charges",
+          "start_line": 213,
+          "end_line": 219
+        }
+      ],
+      "description": "The starting_after filter keeps charges with seq <= the cursor, so the last charge of each page is repeated as the first charge of the next. Clients that walk all pages see duplicates and may double count.",
+      "mechanism_anchors": [
+        "<= should be <",
+        "the last item of each page reappears first on the next page",
+        "exports and reconciliations double count",
+        "walking pages of size 1 never makes progress"
+      ],
+      "fix": "mine = [c for c in mine if c.seq < cursor.seq]"
+    }
+  ],
+  "design": [
+    {
+      "prompt_id": "D1",
+      "topic": "durable idempotency store",
+      "weight": 9,
+      "anchors": [
+        "each server has its own dict, so a retry routed to another server charges again",
+        "a restart or deploy loses every saved response",
+        "use a shared durable store (database table or Redis) with a unique constraint on (account, key)",
+        "record the key before calling the card network so concurrent retries cannot both charge"
+      ]
+    },
+    {
+      "prompt_id": "D2",
+      "topic": "cursor pagination",
+      "weight": 7,
+      "anchors": [
+        "offsets shift when new charges are created while paging, causing skips or repeats",
+        "a cursor is stable under inserts and can use an index seek",
+        "cost: no jumping to page N and no cheap total count",
+        "the cursor must belong to the caller's account"
+      ]
+    },
+    {
+      "prompt_id": "D3",
+      "topic": "lock held across a network call",
+      "weight": 9,
+      "anchors": [
+        "one slow card network call blocks every other charge and refund on the server",
+        "throughput is limited to one authorization at a time",
+        "keep the lock only for local state; call the network outside it",
+        "use a pending state or per-key lock so the same key is not charged twice"
+      ]
+    }
+  ],
+  "improvements": {
+    "weight": 15,
+    "expected_themes": [
+      {
+        "theme": "make the idempotency store durable and shared, and write the key before authorizing the card",
+        "weight": 4
+      },
+      {
+        "theme": "use unguessable random ids instead of sequential ones",
+        "weight": 3
+      },
+      {
+        "theme": "forget_old_responses scans every saved response on every create; expire by time index or TTL store",
+        "weight": 3
+      },
+      {
+        "theme": "make refunds idempotent too (a retried refund request refunds twice)",
+        "weight": 3
+      },
+      {
+        "theme": "keep currency rules in one place (per-currency minimums, zero-decimal currencies)",
+        "weight": 2
+      }
+    ]
+  },
+  "red_herrings": [
+    {
+      "description": "Replaying an idempotent request returns the saved response, even if the charge was refunded since. This is intended: the replay must return exactly what the first request returned (Stripe documents the same behaviour).",
+      "locations": [
+        {
+          "file": "payments_api.py",
+          "function": "create_charge",
+          "start_line": 185,
+          "end_line": 190
+        }
+      ]
+    },
+    {
+      "description": "Declined charges are stored and their 402 response is saved for replay. This is intended: a retry must not get a second authorization attempt with the same key."
+    }
+  ],
+  "grader_instructions": [
+    "Score B1 from either symptom: reading another account's charge or refunding it.",
+    "For B3, full mechanism credit needs both the collision across accounts and its effect (wrong charge returned or customer not charged).",
+    "Tasks T1-T5 are not scored by the grader yet.",
+    "Tasks are a separate mode: T1-T3 point at B2 and B3, so never show them alongside the open bug hunt."
+  ],
+  "tasks": [
+    {
+      "task_id": "T1",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B2"
+      ]
+    },
+    {
+      "task_id": "T2",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B3"
+      ]
+    },
+    {
+      "task_id": "T3",
+      "type": "review_pr",
+      "verdict": "request_changes",
+      "has_defect": true,
+      "anchors": [
+        ">= rejects refunding exactly the remaining amount",
+        "a refund with no amount (refund the rest) now always fails with amount_too_large",
+        "correct condition is > charge.amount - charge.amount_refunded"
+      ]
+    },
+    {
+      "task_id": "T4",
+      "type": "review_pr",
+      "verdict": "approve",
+      "has_defect": false,
+      "anchors": [
+        "check is inside the lock, after the status check and before money moves",
+        "created is a unix timestamp in seconds, so the comparison is correct",
+        "suggest: a test, and a clearer error for the dashboard"
+      ]
+    },
+    {
+      "task_id": "T5",
+      "type": "trace",
+      "correct_option": "b",
+      "distractors": {
+        "a": "assumes the replay reads the live charge instead of the saved response",
+        "c": "assumes the refund changed the request hash; the hash covers only the request body",
+        "d": "assumes the key was not saved or has expired; the TTL is 24 hours"
+      }
+    }
+  ]
+}

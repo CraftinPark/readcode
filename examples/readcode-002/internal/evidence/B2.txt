@@ -1,0 +1,23 @@
+== B2 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.43s
+
+== B2 on shipped: FAIL
+F                                                                        [100%]
+================================== FAILURES ===================================
+______________ test_B2_partial_refunds_cannot_exceed_the_charge _______________
+
+client = <starlette.testclient.TestClient object at 0x00000208615CC2F0>
+
+    def test_B2_partial_refunds_cannot_exceed_the_charge(client):
+        c = charge(client, A, 1000).json()
+        assert client.post(f"/charges/{c['id']}/refunds", headers=A, json={"amount": 700}).status_code == 200
+        second = client.post(f"/charges/{c['id']}/refunds", headers=A, json={"amount": 700})
+>       assert second.status_code == 400
+E       assert 200 == 400
+E        +  where 200 = <Response [200 OK]>.status_code
+
+internal\verification\test_gates.py:62: AssertionError
+=========================== short test summary info ===========================
+FAILED internal\verification\test_gates.py::test_B2_partial_refunds_cannot_exceed_the_charge
+1 failed in 0.59s

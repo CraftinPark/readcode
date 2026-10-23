@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://readcode.example/schemas/taxonomy.schema.json",
+  "title": "ReadCode tag taxonomy: tracks > areas > skills, plus non-revealing public topics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tracks", "areas", "skills", "topics"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "tracks": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "name", "in_mvp", "description", "similar_roles_at"],
+        "properties": {
+          "id": {"$ref": "#/$defs/slug"},
+          "name": {"type": "string", "minLength": 3},
+          "in_mvp": {"type": "boolean"},
+          "description": {"type": "string", "minLength": 10},
+          "similar_roles_at": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "areas": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "track", "name", "description", "skills"],
+        "properties": {
+          "id": {"$ref": "#/$defs/slug"},
+          "track": {"$ref": "#/$defs/slug"},
+          "name": {"type": "string", "minLength": 3},
+          "description": {"type": "string", "minLength": 10},
+          "skills": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/slug"}}
+        }
+      }
+    },
+    "skills": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/tag"}},
+    "topics": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/tag"}}
+  },
+  "$defs": {
+    "slug": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+    "tag": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "description"],
+      "properties": {
+        "id": {"$ref": "#/$defs/slug"},
+        "name": {"type": "string"},
+        "description": {"type": "string", "minLength": 5}
+      }
+    }
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "tracks": [
+    {
+      "id": "payments-infra",
+      "name": "Payments infrastructure",
+      "in_mvp": true,
+      "description": "Backend and API engineering where the product moves money for other businesses.",
+      "similar_roles_at": ["Stripe", "Adyen", "Square", "Checkout.com", "Plaid", "Marqeta", "Ramp"]
+    },
+    {
+      "id": "systems",
+      "name": "Systems programming",
+      "in_mvp": false,
+      "description": "C libraries, kernels and runtimes. Kept so the original C examples stay valid; hidden from the MVP catalog.",
+      "similar_roles_at": []
+    }
+  ],
+  "areas": [
+    {
+      "id": "payments-core", "track": "payments-infra", "name": "Payments core",
+      "description": "Charges, refunds, payment state and the public API around them.",
+      "skills": ["idempotency", "money-invariants", "state-machine", "tenant-isolation", "pagination", "input-validation"]
+    },
+    {
+      "id": "billing-revenue", "track": "payments-infra", "name": "Billing & revenue",
+      "description": "Subscriptions, invoices, usage metering and revenue reporting.",
+      "skills": ["money-invariants", "state-machine", "idempotency", "backward-compat", "retries-timeouts"]
+    },
+    {
+      "id": "risk-fraud", "track": "payments-infra", "name": "Risk & fraud",
+      "description": "Scoring payments in the request path, rules, and blocking abuse.",
+      "skills": ["input-validation", "caching", "race-condition", "retries-timeouts"]
+    },
+    {
+      "id": "platforms-marketplaces", "track": "payments-infra", "name": "Platforms & marketplaces",
+      "description": "Connected accounts, payouts and money split between many parties.",
+      "skills": ["tenant-isolation", "money-invariants", "pagination", "backward-compat"]
+    },
+    {
+      "id": "infra-reliability", "track": "payments-infra", "name": "Infra & reliability",
+      "description": "Availability, failover, queues and the services everything else runs on.",
+      "skills": ["retries-timeouts", "caching", "race-condition", "state-machine"]
+    },
+    {
+      "id": "developer-platform", "track": "payments-infra", "name": "Developer platform & API",
+      "description": "API versioning, SDKs, webhooks and the contract with integrators.",
+      "skills": ["backward-compat", "pagination", "idempotency", "input-validation", "retries-timeouts"]
+    },
+    {
+      "id": "systems-core", "track": "systems", "name": "Systems core",
+      "description": "Memory, ownership and concurrency in C.",
+      "skills": ["memory-safety", "resource-management", "integer-arithmetic", "race-condition", "caching", "input-validation"]
+    }
+  ],
+  "skills": [
+    {"id": "idempotency", "name": "Idempotency", "description": "The same request sent twice has the effect of sending it once (retries, double clicks, replays)."},
+    {"id": "tenant-isolation", "name": "Tenant isolation", "description": "One customer can never read or change another customer's data."},
+    {"id": "pagination", "name": "Pagination", "description": "Lists split into pages return every item exactly once, in a stable order."},
+    {"id": "money-invariants", "name": "Money invariants", "description": "Amounts add up: no refund beyond what was paid, no rounding drift, integer minor units."},
+    {"id": "state-machine", "name": "State machines", "description": "Objects move only through allowed states (pending, succeeded, refunded...)."},
+    {"id": "retries-timeouts", "name": "Retries & timeouts", "description": "Calls to other systems give up in time and retry without making things worse."},
+    {"id": "race-condition", "name": "Race conditions", "description": "Two things happening at once cannot break a rule that holds when they happen one at a time."},
+    {"id": "caching", "name": "Caching", "description": "Cached data is fresh enough, evicted correctly and does not stampede the source."},
+    {"id": "input-validation", "name": "Input validation", "description": "Bad, missing or extreme input is rejected or handled instead of trusted."},
+    {"id": "backward-compat", "name": "Backward compatibility", "description": "Existing callers keep working when the code or the API changes."},
+    {"id": "memory-safety", "name": "Memory safety", "description": "No use-after-free, overflow or read of memory the code does not own."},
+    {"id": "resource-management", "name": "Resource management", "description": "Everything acquired is released once, on every path including errors."},
+    {"id": "integer-arithmetic", "name": "Integer arithmetic", "description": "Division, overflow, sign and truncation behave as intended."}
+  ],
+  "topics": [
+    {"id": "api", "description": "An HTTP/JSON API"},
+    {"id": "payments", "description": "Moves or records money"},
+    {"id": "multi-tenant", "description": "Serves many customers from one deployment"},
+    {"id": "systems", "description": "Systems-level code"},
+    {"id": "data-structures", "description": "Built around a data structure"},
+    {"id": "library", "description": "A reusable library rather than a service"}
+  ]
+}

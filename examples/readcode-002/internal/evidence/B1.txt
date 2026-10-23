@@ -1,0 +1,23 @@
+== B1 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.43s
+
+== B1 on shipped: FAIL
+F                                                                        [100%]
+================================== FAILURES ===================================
+_________________ test_B1_cannot_read_another_accounts_charge _________________
+
+client = <starlette.testclient.TestClient object at 0x0000018F797502F0>
+
+    def test_B1_cannot_read_another_accounts_charge(client):
+        theirs = charge(client, B, 4200).json()
+>       assert client.get(f"/charges/{theirs['id']}", headers=A).status_code == 404
+E       AssertionError: assert 200 == 404
+E        +  where 200 = <Response [200 OK]>.status_code
+E        +    where <Response [200 OK]> = get('/charges/ch_000001', headers={'Authorization': 'Bearer sk_test_acme'})
+E        +      where get = <starlette.testclient.TestClient object at 0x0000018F797502F0>.get
+
+internal\verification\test_gates.py:54: AssertionError
+=========================== short test summary info ===========================
+FAILED internal\verification\test_gates.py::test_B1_cannot_read_another_accounts_charge
+1 failed in 0.59s

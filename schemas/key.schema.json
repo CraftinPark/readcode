@@ -42,13 +42,15 @@
       "type": "array", "minItems": 1,
       "items": {
         "type": "object", "additionalProperties": false,
-        "required": ["id", "title", "severity", "weight", "category", "locations", "description", "mechanism_anchors", "fix"],
+        "required": ["id", "title", "severity", "weight", "category", "skills", "locations", "description", "mechanism_anchors", "fix"],
         "properties": {
           "id": {"type": "string", "pattern": "^B[0-9]+$"},
           "title": {"type": "string", "minLength": 5},
           "severity": {"enum": ["low", "medium", "high", "critical"]},
           "weight": {"type": "number", "exclusiveMinimum": 0},
           "category": {"type": "string", "minLength": 3},
+          "skills": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+                     "description": "taxonomy skill ids (bug classes); grader-only, shown to the candidate after submitting"},
           "locations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/range"}},
           "description": {"type": "string", "minLength": 20},
           "mechanism_anchors": {"type": "array", "minItems": 1, "items": {"type": "string"}},
@@ -103,9 +105,28 @@
         "items": {"type": "array", "items": {"type": "string"}}
       }
     },
-    "grader_instructions": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+    "grader_instructions": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "tasks": {"type": "array", "items": {"$ref": "#/$defs/task"}}
   },
   "$defs": {
+    "task": {
+      "type": "object", "additionalProperties": false, "required": ["task_id", "type"],
+      "properties": {
+        "task_id": {"type": "string", "pattern": "^T[0-9]+$"},
+        "type": {"enum": ["incident", "review_pr", "trace"]},
+        "answer_bug_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^B[0-9]+$"}},
+        "verdict": {"enum": ["approve", "request_changes"]},
+        "has_defect": {"type": "boolean"},
+        "anchors": {"type": "array", "items": {"type": "string"}},
+        "correct_option": {"type": "string", "pattern": "^[a-z]$"},
+        "distractors": {"type": "object", "additionalProperties": {"type": "string"}, "description": "option id -> the misread it is built from"}
+      },
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "incident"}}}, "then": {"required": ["answer_bug_ids"]}},
+        {"if": {"properties": {"type": {"const": "review_pr"}}}, "then": {"required": ["verdict", "has_defect", "anchors"]}},
+        {"if": {"properties": {"type": {"const": "trace"}}}, "then": {"required": ["correct_option", "distractors"]}}
+      ]
+    },
     "range": {
       "type": "object", "additionalProperties": false,
       "required": ["file", "start_line", "end_line"],

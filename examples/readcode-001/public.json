@@ -5,13 +5,13 @@
   "title": "Thread-safe LRU cache",
   "language": "c",
   "difficulty": "medium",
+  "track": "systems",
+  "area": "systems-core",
+  "rung": 3,
   "topics": [
-    "memory-safety",
-    "pointer-manipulation",
+    "systems",
     "data-structures",
-    "concurrency",
-    "api-design",
-    "resource-management"
+    "library"
   ],
   "estimated_minutes": 30,
   "files": [

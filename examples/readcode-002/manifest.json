@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "id": "readcode-002",
+  "source": {
+    "kind": "generated",
+    "license_spdx": "LicenseRef-ReadCode-Original",
+    "original_sha256": "35115690ccac06b22f98ddff8763e951fbc9045586b95f19e4c867d1c662cb88"
+  },
+  "baseline": {
+    "path": "internal/baseline/payments_api.py",
+    "sha256": "35115690ccac06b22f98ddff8763e951fbc9045586b95f19e4c867d1c662cb88",
+    "gate_a": {
+      "passed": true,
+      "tests_run": 6,
+      "tools": [
+        "test-driver"
+      ],
+      "evidence_file": "internal/evidence/gate_a.txt"
+    },
+    "changes_summary": "Hand-written clean reference. The shipped code is this file with the four mutations in internal/verification/run_gates.py applied."
+  },
+  "shipped": [
+    {
+      "path": "payments_api.py",
+      "sha256": "115273bb8a4959db432640124eea34193a988d1d3aac04055e3ae7ff4cb385dd"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "B1",
+      "file": "payments_api.py",
+      "line": 156,
+      "change": {
+        "old": "        if charge is None or charge.account_id != account.id:\n",
+        "new": "        if charge is None:\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "test-driver",
+        "evidence_file": "internal/evidence/B1.txt"
+      }
+    },
+    {
+      "id": "B2",
+      "file": "payments_api.py",
+      "line": 228,
+      "change": {
+        "old": "            if amount > charge.amount - charge.amount_refunded:\n",
+        "new": "            if amount > charge.amount:\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "test-driver",
+        "evidence_file": "internal/evidence/B2.txt"
+      }
+    },
+    {
+      "id": "B3",
+      "file": "payments_api.py",
+      "line": 184,
+      "change": {
+        "old": "                scope = (account.id, idempotency_key)\n",
+        "new": "                scope = idempotency_key\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "test-driver",
+        "evidence_file": "internal/evidence/B3.txt"
+      }
+    },
+    {
+      "id": "B4",
+      "file": "payments_api.py",
+      "line": 217,
+      "change": {
+        "old": "            mine = [c for c in mine if c.seq < cursor.seq]\n",
+        "new": "            mine = [c for c in mine if c.seq <= cursor.seq]\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "test-driver",
+        "evidence_file": "internal/evidence/B4.txt"
+      }
+    }
+  ],
+  "review": {
+    "status": "pending",
+    "notes": "Written 2026-10-22 on danny-v0. Needs a human read-through and a pilot solve."
+  }
+}
