@@ -1,0 +1,67 @@
+{
+  "repo": "saleor/saleor",
+  "license_spdx": "BSD-3-Clause",
+  "license_file": "LICENSE-saleor.txt",
+  "issue": 14327,
+  "pr": 14380,
+  "base_commit": "6e023945797720cc826be69506373998d3c527ec",
+  "merge_commit": "ce4a83bac284961a76e7c1682df91321f0579bdb",
+  "files": [
+    {
+      "path": "saleor/payment/utils.py",
+      "ranges": [
+        [
+          923,
+          936
+        ],
+        [
+          1015,
+          1045
+        ],
+        [
+          1083,
+          1273
+        ]
+      ]
+    },
+    {
+      "path": "saleor/payment/gateway.py",
+      "ranges": [
+        [
+          119,
+          155
+        ],
+        [
+          211,
+          260
+        ]
+      ]
+    },
+    {
+      "path": "saleor/payment/transaction_item_calculations.py",
+      "ranges": [
+        [
+          1,
+          398
+        ]
+      ]
+    },
+    {
+      "path": "saleor/payment/models.py",
+      "ranges": [
+        [
+          158,
+          207
+        ]
+      ]
+    }
+  ],
+  "fixes": [
+    {
+      "id": "B1",
+      "file": "saleor/payment/utils.py",
+      "buggy": "    request_event.psp_reference = psp_reference\n    request_event.save()\n",
+      "fixed": "    request_event.psp_reference = psp_reference\n    request_event.include_in_calculations = True\n    request_event.save(update_fields=[\"psp_reference\", \"include_in_calculations\"])\n"
+    }
+  ]
+}

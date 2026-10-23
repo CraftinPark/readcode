@@ -15,6 +15,5 @@
     }
   ],
   "explanation": "The reference sent to the card network is random, so the network's deduplication on reference is defeated. The network charged the card, timed out, the key was released, and the retry used a new reference: a second authorization. Our DB shows one charge, the bank two. network_reference is defined but unused.",
-  "confidence": "certain",
   "fix": "reference = idempotency.network_reference(acct, idempotency_key) if idempotency_key else db.new_id(\"ref\")"
 }

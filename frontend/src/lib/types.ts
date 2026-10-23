@@ -11,13 +11,28 @@ export function languageLabel(language: string): string {
 
 export type TaskType = 'incident' | 'review_pr' | 'trace'
 
-// An incident ticket, a PR to review, or a trace question (multiple choice).
+export interface TaskOption {
+  id: string
+  text: string
+  location?: Range        // a place in the code ("where is the cause?")
+  diff?: string           // a candidate fix ("which change fixes it?")
+}
+
+// A multiple-choice part of a task, e.g. where / why / fix. Graded exactly.
+export interface TaskPart {
+  id: string
+  prompt: string
+  options: TaskOption[]
+}
+
+// An incident ticket, a PR to review, or a trace question.
 export interface PublicTask {
   id: string
   type: TaskType
   text: string
   diff?: string
-  options?: { id: string; text: string }[]
+  options?: TaskOption[]
+  parts?: TaskPart[]
 }
 
 export interface ExerciseSummary {
@@ -40,6 +55,15 @@ export interface ExerciseListItem extends ExerciseSummary {
   track_name: string
   area_name: string
   in_mvp: boolean
+  has_review: boolean     // false for task-only examples (no full review)
+}
+
+export interface PlaygroundPreset {
+  label: string
+  method: 'GET' | 'POST'
+  path: string
+  headers?: Record<string, string>
+  body?: Record<string, unknown>
 }
 
 export interface PublicExercise extends Omit<ExerciseSummary, 'line_count'> {
@@ -47,6 +71,7 @@ export interface PublicExercise extends Omit<ExerciseSummary, 'line_count'> {
   license: { spdx: string; attribution: string }
   questions: { id: string; text: string }[]
   design_prompts: { id: string; text: string }[]
+  playground?: { kind: 'backend-console'; presets: PlaygroundPreset[] }
 }
 
 export type CommentType = 'bug' | 'question' | 'design' | 'improvement'

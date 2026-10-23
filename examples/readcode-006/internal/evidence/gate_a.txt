@@ -1,0 +1,2 @@
+Gate A was not run locally: saleor/saleor needs its full stack (database, settings) to run tests.
+The fixed code is upstream commit ded69f9c7097324acf3100f3aec34cb0172babd9, merged after review.

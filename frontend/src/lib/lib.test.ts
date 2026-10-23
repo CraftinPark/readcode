@@ -122,8 +122,8 @@ describe('multi-file exercises and tasks', () => {
     const validate = ajv.compile(schema)
     const t1 = pub3.tasks!.find((t) => t.id === 'T1')!
     const t5 = pub3.tasks!.find((t) => t.id === 'T5')!
-    const a: TaskAnswer = { startedAt: Date.parse('2026-10-22T10:00:00Z'), ranges: [{ file: 'payments/app.py', start_line: 91, end_line: 91 }],
-      explanation: '  random reference  ', fix: '', confidence: 'certain' }
+    const a: TaskAnswer = { startedAt: Date.parse('2026-10-22T10:00:00Z'), answers: {}, ranges: [{ file: 'payments/app.py', start_line: 91, end_line: 91 }],
+      explanation: '  random reference  ', fix: '' }
     expect(canSubmitTask(t1, a)).toBe(true)
     expect(canSubmitTask(t1, { ...a, ranges: [] })).toBe(false)
     const sub = buildTaskSubmission(pub3, t1, a, 'local', new Date('2026-10-22T10:09:00Z'))
@@ -132,6 +132,25 @@ describe('multi-file exercises and tasks', () => {
     expect(canSubmitTask(t5, { ...a, ranges: [] })).toBe(false)              // a review needs a verdict
     const review = buildTaskSubmission(pub3, t5, { ...a, ranges: [], verdict: 'request_changes' }, 'local')
     expect(validate(review)).toBe(true)
+    expect(sub).not.toHaveProperty('confidence')
+  })
+
+  it('submits multiple-choice answers only when every part is answered', () => {
+    const schema = JSON.parse(readFileSync(resolve(ROOT, 'schemas/task-submission.schema.json'), 'utf8'))
+    const ajv = new Ajv2020({ allErrors: true })
+    addFormats(ajv)
+    const validate = ajv.compile(schema)
+    const pub4: PublicExercise = JSON.parse(readFileSync(resolve(ROOT, 'examples/readcode-004/public.json'), 'utf8'))
+    const t1 = pub4.tasks![0]
+    expect(t1.parts!.map((p) => p.id)).toEqual(['where', 'why', 'fix'])
+    const a: TaskAnswer = { startedAt: Date.now(), answers: { where: 'b', why: 'b' }, ranges: [], explanation: '', fix: '' }
+    expect(canSubmitTask(t1, a)).toBe(false)
+    const done = { ...a, answers: { ...a.answers, fix: 'c' } }
+    expect(canSubmitTask(t1, done)).toBe(true)
+    const sub = buildTaskSubmission(pub4, t1, done, 'local')
+    expect(sub.answers).toEqual({ where: 'b', why: 'b', fix: 'c' })
+    expect(sub).not.toHaveProperty('explanation')
+    expect(validate(sub)).toBe(true)
   })
 })
 

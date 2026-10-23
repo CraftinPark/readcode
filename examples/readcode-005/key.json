@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "id": "readcode-005",
+  "version": 1,
+  "scoring": {
+    "total": 100,
+    "sections": {
+      "comprehension": 0,
+      "bugs": 100,
+      "design": 0,
+      "improvements": 0
+    }
+  },
+  "comprehension": [],
+  "bugs": [
+    {
+      "id": "B1",
+      "title": "Checkout is returned to anyone who has its token",
+      "severity": "critical",
+      "category": "authorization",
+      "skills": [
+        "tenant-isolation"
+      ],
+      "locations": [
+        {
+          "file": "saleor/graphql/checkout/resolvers.py",
+          "function": "resolve_checkout",
+          "start_line": 17,
+          "end_line": 18
+        },
+        {
+          "file": "saleor/graphql/checkout/schema.py",
+          "function": "resolve_checkout",
+          "start_line": 50,
+          "end_line": 51
+        }
+      ],
+      "description": "resolve_checkout looks a checkout up by token and returns it with no check of who is asking. The schema resolver drops info, so the requester is not even available. A token seen in a link, log or screenshot gives full read access to another customer's cart, address and email.",
+      "mechanism_anchors": [
+        "no comparison of checkout.user with the requester",
+        "info is not passed to the resolver",
+        "a token is a bearer credential once it leaks",
+        "anonymous checkouts must stay readable by token"
+      ],
+      "fix": "Pass info to the resolver; return the checkout only if it is anonymous, owned by the requester, or the requester has the manage-checkouts permission (upstream PR #5268).",
+      "weight": 100
+    }
+  ],
+  "design": [],
+  "improvements": {
+    "weight": 0,
+    "expected_themes": []
+  },
+  "red_herrings": [],
+  "grader_instructions": [
+    "Task-only example built from a real upstream bug. The multiple-choice parts are graded exactly; no judge is needed.",
+    "Upstream: issue saleor/saleor#5245, fixed by PR #5268.",
+    "Unrelated latent bug in the excerpt: CheckoutQueries.resolve_checkouts calls resolve_checkouts() without returning it. Not part of this task; do not penalize a note about it."
+  ],
+  "tasks": [
+    {
+      "task_id": "T1",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B1"
+      ],
+      "part_answers": {
+        "where": "b",
+        "why": "c",
+        "fix": "d"
+      },
+      "part_weights": {
+        "where": 40,
+        "why": 40,
+        "fix": 20
+      },
+      "distractors": {
+        "where.a": "the argument type is fine; a UUID4 cannot be enumerated",
+        "where.c": "resolve_checkouts is protected by permission_required",
+        "where.d": "resolve_checkout_lines is protected by permission_required in the schema",
+        "why.a": "UUID4 values are random, not sequential",
+        "why.b": "the list has permission_required(MANAGE_CHECKOUTS)",
+        "why.d": "nothing in this code reuses tokens",
+        "fix.a": "customers and anonymous shoppers could no longer read their own checkout; the storefront would break",
+        "fix.b": "anonymous checkouts (user is None) and staff or apps would lose access",
+        "fix.c": "longer tokens do not help once a token leaks; the missing ownership check remains"
+      }
+    }
+  ]
+}

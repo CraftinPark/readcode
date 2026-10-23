@@ -5,7 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "exercise_id", "exercise_version", "task_id", "task_type", "candidate_id",
-               "submitted_at", "time_spent_minutes", "locations", "explanation", "confidence"],
+               "submitted_at", "time_spent_minutes", "locations"],
   "properties": {
     "schema_version": {"const": 1},
     "exercise_id": {"type": "string", "pattern": "^readcode-[0-9]{3,}$"},
@@ -28,15 +28,16 @@
         }
       }
     },
-    "explanation": {"type": "string"},
+    "explanation": {"type": "string", "description": "Free text (tasks without parts); never needed for multiple-choice parts"},
+    "answers": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[a-z]$"},
+                "description": "part id -> chosen option id, for tasks with multiple-choice parts"},
     "fix": {"type": "string"},
     "verdict": {"enum": ["approve", "request_changes"]},
-    "option": {"type": "string", "pattern": "^[a-z]$"},
-    "confidence": {"enum": ["guess", "fairly_sure", "certain"]}
+    "option": {"type": "string", "pattern": "^[a-z]$"}
   },
   "allOf": [
-    {"if": {"properties": {"task_type": {"const": "incident"}}}, "then": {"properties": {"locations": {"minItems": 1}}}},
-    {"if": {"properties": {"task_type": {"const": "review_pr"}}}, "then": {"required": ["verdict"]}},
+    {"if": {"properties": {"task_type": {"const": "incident"}}, "not": {"required": ["answers"]}}, "then": {"properties": {"locations": {"minItems": 1}}}},
+    {"if": {"properties": {"task_type": {"const": "review_pr"}}, "not": {"required": ["answers"]}}, "then": {"required": ["verdict"]}},
     {"if": {"properties": {"task_type": {"const": "trace"}}}, "then": {"required": ["option"]}}
   ]
 }

@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "id": "readcode-006",
+  "version": 1,
+  "scoring": {
+    "total": 100,
+    "sections": {
+      "comprehension": 0,
+      "bugs": 100,
+      "design": 0,
+      "improvements": 0
+    }
+  },
+  "comprehension": [],
+  "bugs": [
+    {
+      "id": "B1",
+      "title": "Back-in-stock check ignores allocated units",
+      "severity": "medium",
+      "category": "events",
+      "skills": [
+        "state-machine"
+      ],
+      "locations": [
+        {
+          "file": "saleor/graphql/product/bulk_mutations/products.py",
+          "function": "update_or_create_variant_stocks",
+          "start_line": 165,
+          "end_line": 186
+        }
+      ],
+      "description": "update_or_create_variant_stocks decides whether a variant is coming back in stock by comparing the stored quantity with zero. Allocated units are ignored, so a stock that is fully allocated (quantity 5, allocated 5) does not count as out of stock, and restocking it never sends BACK_IN_STOCK. The out-of-stock check has the same blind spot.",
+      "mechanism_anchors": [
+        "available = quantity - quantity_allocated",
+        "quantity 5 with 5 allocated is out of stock but the check sees 5",
+        "setting 0 first works because then quantity <= 0",
+        "the out-of-stock check also ignores allocation"
+      ],
+      "fix": "Compare available stock (quantity minus allocated) with zero in both the back-in-stock and the out-of-stock conditions (upstream PR #11714).",
+      "weight": 100
+    }
+  ],
+  "design": [],
+  "improvements": {
+    "weight": 0,
+    "expected_themes": []
+  },
+  "red_herrings": [],
+  "grader_instructions": [
+    "Task-only example built from a real upstream bug. The multiple-choice parts are graded exactly; no judge is needed.",
+    "Upstream: issue saleor/saleor#11637, fixed by PR #11714.",
+    "where.b and why.a are deliberately real-looking: a fully allocated stock is the core idea."
+  ],
+  "tasks": [
+    {
+      "task_id": "T1",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B1"
+      ],
+      "part_answers": {
+        "where": "a",
+        "why": "c",
+        "fix": "c"
+      },
+      "part_weights": {
+        "where": 40,
+        "why": 40,
+        "fix": 20
+      },
+      "distractors": {
+        "where.b": "quantity_allocated is not changed by this mutation, so saving only quantity is correct",
+        "where.c": "increase_stock is not used by this mutation",
+        "where.d": "the warehouses are loaded correctly; the decision is made later",
+        "why.a": "a real Python pitfall with several warehouses, but the merchant updated one stock",
+        "why.b": "bulk_update leaves columns it is not told about untouched",
+        "why.d": "the stock row already exists, so is_created is False",
+        "fix.a": "sends BACK_IN_STOCK on every increase, even when the variant was never out of stock",
+        "fix.b": "still requires stock.quantity <= 0, which is false (5) in the merchant's case",
+        "fix.d": "the allocated count was never wrong; the condition is"
+      }
+    }
+  ]
+}

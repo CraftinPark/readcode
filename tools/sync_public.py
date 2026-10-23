@@ -51,7 +51,8 @@ def sync(examples, out):
         index.append({k: pub[k] for k in SUMMARY_FIELDS} | {
             "line_count": sum(f["line_count"] for f in pub["files"]),
             "track_name": track.get("name", pub["track"]), "area_name": area.get("name", pub["area"]),
-            "in_mvp": track.get("in_mvp", True), "tasks": pub.get("tasks", [])})
+            "in_mvp": track.get("in_mvp", True), "tasks": pub.get("tasks", []),
+            "has_review": bool(pub["questions"] or pub["design_prompts"])})
     (out / "index.json").write_text(json.dumps(index, indent=2))
     return index
 

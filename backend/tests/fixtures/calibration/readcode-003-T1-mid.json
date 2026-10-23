@@ -15,6 +15,5 @@
     }
   ],
   "explanation": "The timeout path releases the idempotency key, so the retry is processed again and charges again.",
-  "confidence": "fairly_sure",
   "fix": "do not release the key on timeout"
 }

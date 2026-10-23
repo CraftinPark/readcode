@@ -216,3 +216,44 @@ def test_clean_multi_file_example_passes(tmp_path, validators):
     ex3 = tmp_path / "readcode-003"
     shutil.copytree(ROOT / "examples" / "readcode-003", ex3)
     assert errors(ex3, validators) == ""
+
+
+# ---- multiple-choice parts (real-bug examples) --------------------------------
+
+@pytest.fixture
+def ex4(tmp_path):
+    dst = tmp_path / "readcode-004"
+    shutil.copytree(ROOT / "examples" / "readcode-004", dst)
+    return dst
+
+
+def test_clean_real_bug_example_passes(ex4, validators):
+    assert errors(ex4, validators) == ""
+
+
+def test_part_answer_that_is_not_an_option_is_rejected(ex4, validators):
+    key = load(ex4, "key")
+    key["tasks"][0]["part_answers"]["why"] = "z"
+    save(ex4, "key", key)
+    assert "part why: answer 'z' is not one of" in errors(ex4, validators)
+
+
+def test_part_weights_must_sum_to_100(ex4, validators):
+    key = load(ex4, "key")
+    key["tasks"][0]["part_weights"]["fix"] = 30
+    save(ex4, "key", key)
+    assert "part_weights must cover" in errors(ex4, validators)
+
+
+def test_option_location_outside_the_file_is_rejected(ex4, validators):
+    pub = load(ex4, "public")
+    pub["tasks"][0]["parts"][0]["options"][0]["location"]["end_line"] = 9999
+    save(ex4, "public", pub)
+    assert "not in saleor/payment/transaction_item_calculations.py" in errors(ex4, validators)
+
+
+def test_part_answers_in_public_are_rejected(ex4, validators):
+    pub = load(ex4, "public")
+    pub["tasks"][0]["part_answers"] = {"where": "b"}
+    save(ex4, "public", pub)
+    assert "part_answers" in errors(ex4, validators)

@@ -64,6 +64,7 @@ function ExerciseCard({ e }: { e: ExerciseListItem }) {
         <div className="mt-2 text-[15px] font-semibold">{e.title}</div>
         <div className="mt-0.5 text-xs text-muted">
           Exercise {e.id.replace(/^readcode-/, '')} · {languageLabel(e.language)} · {e.line_count} lines
+          {!e.has_review && ' · real bug, fixed upstream'}
           {e.rung ? ` · rung ${e.rung} of 5` : ''} · <span className="capitalize">{e.difficulty}</span>
         </div>
       </div>
@@ -84,13 +85,13 @@ function ExerciseCard({ e }: { e: ExerciseListItem }) {
           })}
         </div>
       )}
-      <div className="flex items-center justify-between gap-3 border-t border-line bg-panel px-4 py-3">
+      {e.has_review && <div className="flex items-center justify-between gap-3 border-t border-line bg-panel px-4 py-3">
         <span className="text-xs text-muted">Full review: find every bug, answer the design questions · about {e.estimated_minutes} min</span>
         <a href={`#/exercise/${e.id}`}
           className={`flex h-8 flex-none items-center rounded-lg px-3.5 text-[13px] font-semibold ${tasks.length ? 'border border-line-strong bg-white hover:border-ink' : 'bg-accent text-white'}`}>
           {started ? 'Continue review' : 'Full review'} →
         </a>
-      </div>
+      </div>}
     </div>
   )
 }

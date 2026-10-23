@@ -36,7 +36,7 @@
           "properties": {
             "passed": {"type": "boolean"},
             "tests_run": {"type": "integer", "minimum": 0},
-            "tools": {"type": "array", "minItems": 1, "items": {"enum": ["asan", "ubsan", "tsan", "valgrind", "test-driver", "static-analyzer"]}},
+            "tools": {"type": "array", "minItems": 1, "items": {"enum": ["asan", "ubsan", "tsan", "valgrind", "test-driver", "static-analyzer", "upstream-ci"]}},
             "evidence_file": {"type": "string"}
           }
         }
@@ -73,7 +73,8 @@
             "required": ["detected", "detected_by", "evidence_file"],
             "properties": {
               "detected": {"type": "boolean"},
-              "detected_by": {"enum": ["asan", "ubsan", "tsan", "valgrind", "test-driver", "static-analyzer", "none"]},
+              "detected_by": {"enum": ["asan", "ubsan", "tsan", "valgrind", "test-driver", "static-analyzer", "upstream-fix", "none"],
+                            "description": "upstream-fix: a real bug proven by the merged upstream fix and its regression test, not run here"},
               "evidence_file": {"type": "string"}
             }
           }

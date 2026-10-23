@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "id": "readcode-004",
+  "source": {
+    "kind": "scraped",
+    "repo": "https://github.com/saleor/saleor",
+    "path": "saleor/payment/utils.py",
+    "commit": "6e023945797720cc826be69506373998d3c527ec",
+    "license_spdx": "BSD-3-Clause",
+    "retrieved_at": "2026-10-23T05:49:48Z",
+    "original_sha256": "e8bb2609025663a42482893ecacf5558fff2dd5c584ff11a8b5705da4bbd3e3d"
+  },
+  "baseline": {
+    "path": "internal/baseline",
+    "sha256": "d744ca36fcc936a036a521268a2b08d1bdb963c32b7ac28dd095e01709c624ac",
+    "changes_summary": "Excerpts of the files above with the upstream fix (PR #14380) applied.",
+    "gate_a": {
+      "passed": false,
+      "tests_run": 0,
+      "tools": [
+        "upstream-ci"
+      ],
+      "evidence_file": "internal/evidence/gate_a.txt"
+    }
+  },
+  "shipped": [
+    {
+      "path": "LICENSE-saleor.txt",
+      "sha256": "2d12a921903d021dfbf2d088d6747e7e48c03c5206ca5dc50d080f2ebf90573f"
+    },
+    {
+      "path": "saleor/payment/gateway.py",
+      "sha256": "04d0af65a4866ebf139c95be9b7d8feac26fc65b77ead81ead32b175e6e65bab"
+    },
+    {
+      "path": "saleor/payment/models.py",
+      "sha256": "a9a88675f616cd6582fa58b7f6f46703b0878a5a5843d6e34162d314a69a5aa3"
+    },
+    {
+      "path": "saleor/payment/transaction_item_calculations.py",
+      "sha256": "0f14b41565477d2d17da8c7f3205f050bab87a0622d07d04ff09d839d809ba13"
+    },
+    {
+      "path": "saleor/payment/utils.py",
+      "sha256": "8f82ee11187c5c104e8630a9452eecd40966193f76cefd8fbbd7fb58f699bb55"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "B1",
+      "file": "saleor/payment/utils.py",
+      "line": 185,
+      "change": {
+        "old": "    request_event.psp_reference = psp_reference\n    request_event.include_in_calculations = True\n    request_event.save(update_fields=[\"psp_reference\", \"include_in_calculations\"])\n",
+        "new": "    request_event.psp_reference = psp_reference\n    request_event.save()\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "upstream-fix",
+        "evidence_file": "internal/evidence/B1.txt"
+      }
+    }
+  ],
+  "review": {
+    "status": "pending"
+  }
+}

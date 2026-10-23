@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "id": "readcode-004",
+  "version": 1,
+  "title": "Transactions: async refund never shows as pending",
+  "language": "python",
+  "difficulty": "hard",
+  "track": "payments-infra",
+  "area": "payments-core",
+  "rung": 4,
+  "topics": [
+    "api",
+    "payments"
+  ],
+  "estimated_minutes": 20,
+  "files": [
+    {
+      "path": "saleor/payment/utils.py",
+      "line_count": 242
+    },
+    {
+      "path": "saleor/payment/gateway.py",
+      "line_count": 91
+    },
+    {
+      "path": "saleor/payment/transaction_item_calculations.py",
+      "line_count": 401
+    },
+    {
+      "path": "saleor/payment/models.py",
+      "line_count": 52
+    },
+    {
+      "path": "LICENSE-saleor.txt",
+      "line_count": 30
+    }
+  ],
+  "license": {
+    "spdx": "BSD-3-Clause",
+    "attribution": "Code from Saleor (github.com/saleor/saleor), (c) Saleor Commerce and Mirumee Software, BSD-3-Clause. Excerpted; see LICENSE-saleor.txt.",
+    "source_url": "https://github.com/saleor/saleor"
+  },
+  "questions": [],
+  "design_prompts": [],
+  "tasks": [
+    {
+      "id": "T1",
+      "type": "incident",
+      "text": "Support ticket #7302 (a merchant using a payment app): \"We refunded $10.00 on an order. Our payment app answers refund requests asynchronously: it returns only a PSP reference and confirms later. After the request, the transaction still shows the $10.00 in chargedAmount, and refundPendingAmount is 0. It should be in refundPendingAmount until the provider confirms.\" Find the cause.",
+      "parts": [
+        {
+          "id": "where",
+          "prompt": "Where is the cause?",
+          "options": [
+            {
+              "id": "a",
+              "text": "calculate_transaction_amount_based_on_events: the query that skips events with include_in_calculations=False",
+              "location": {
+                "file": "saleor/payment/transaction_item_calculations.py",
+                "start_line": 332,
+                "end_line": 352
+              }
+            },
+            {
+              "id": "b",
+              "text": "create_transaction_event_from_request_and_webhook_response: the request event is updated with the PSP reference and saved",
+              "location": {
+                "file": "saleor/payment/utils.py",
+                "start_line": 184,
+                "end_line": 186
+              }
+            },
+            {
+              "id": "c",
+              "text": "request_refund_action: refund_value defaults to the transaction's charged value",
+              "location": {
+                "file": "saleor/payment/gateway.py",
+                "start_line": 4,
+                "end_line": 40
+              }
+            },
+            {
+              "id": "d",
+              "text": "_should_increase_pending_amount: pending only grows while there is no success or failure event",
+              "location": {
+                "file": "saleor/payment/transaction_item_calculations.py",
+                "start_line": 67,
+                "end_line": 77
+              }
+            }
+          ]
+        },
+        {
+          "id": "why",
+          "prompt": "Why does that produce what the merchant sees?",
+          "options": [
+            {
+              "id": "a",
+              "text": "In the async flow the app sends no event, so the pending amount waits for a success event that only arrives later."
+            },
+            {
+              "id": "b",
+              "text": "The request event is saved with include_in_calculations still False (the model default), so the recalculation skips it and nothing moves from charged to refund pending."
+            },
+            {
+              "id": "c",
+              "text": "request_event.save() without update_fields overwrites amounts that recalculate_transaction_amounts just computed."
+            },
+            {
+              "id": "d",
+              "text": "The PSP reference is not stored on the request event, so it cannot be grouped with the provider's later events."
+            }
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "Which change fixes it?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Count every event in the calculation",
+              "diff": "--- a/saleor/payment/transaction_item_calculations.py\n+++ b/saleor/payment/transaction_item_calculations.py\n@@ calculate_transaction_amount_based_on_events\n-    events: Iterable[TransactionEvent] = transaction.events.order_by(\n-        \"created_at\"\n-    ).exclude(include_in_calculations=False)\n+    events: Iterable[TransactionEvent] = transaction.events.order_by(\"created_at\")\n"
+            },
+            {
+              "id": "b",
+              "text": "Treat any request event as pending",
+              "diff": "--- a/saleor/payment/transaction_item_calculations.py\n+++ b/saleor/payment/transaction_item_calculations.py\n@@ _should_increase_pending_amount\n     if request:\n-        # the pending amount should be increased only when we don't\n-        # have any failure/success event with the psp reference\n-        if not failure and not success:\n-            return True\n+        return True\n     return False\n"
+            },
+            {
+              "id": "c",
+              "text": "Include the request event in calculations when saving it",
+              "diff": "--- a/saleor/payment/utils.py\n+++ b/saleor/payment/utils.py\n@@ create_transaction_event_from_request_and_webhook_response\n     psp_reference = transaction_request_response.psp_reference\n     request_event.psp_reference = psp_reference\n-    request_event.save()\n+    request_event.include_in_calculations = True\n+    request_event.save(update_fields=[\"psp_reference\", \"include_in_calculations\"])\n"
+            },
+            {
+              "id": "d",
+              "text": "Include the response event in calculations",
+              "diff": "--- a/saleor/payment/utils.py\n+++ b/saleor/payment/utils.py\n@@ _create_event_from_response\n         app=app,\n-        include_in_calculations=True,\n+        include_in_calculations=bool(response_event.psp_reference),\n"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

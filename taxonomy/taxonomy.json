@@ -45,7 +45,7 @@
     {
       "id": "developer-platform", "track": "payments-infra", "name": "Developer platform & API",
       "description": "API versioning, SDKs, webhooks and the contract with integrators.",
-      "skills": ["backward-compat", "pagination", "idempotency", "input-validation", "retries-timeouts"]
+      "skills": ["backward-compat", "pagination", "idempotency", "input-validation", "retries-timeouts", "state-machine"]
     },
     {
       "id": "systems-core", "track": "systems", "name": "Systems core",

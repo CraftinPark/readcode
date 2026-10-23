@@ -13,13 +13,13 @@ _spec.loader.exec_module(sp)
 def test_only_public_files_are_copied(tmp_path):
     out = tmp_path / "out"
     index = sp.sync(ROOT / "examples", out)
-    assert [e["id"] for e in index] == ["readcode-001", "readcode-002", "readcode-003"]
+    pubs = {p.parent.name: json.loads(p.read_text(encoding="utf-8")) for p in sorted((ROOT / "examples").glob("*/public.json"))}
+    assert [e["id"] for e in index] == sorted(pubs)
     files = sorted(p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file())
-    pub3 = json.loads((ROOT / "examples" / "readcode-003" / "public.json").read_text(encoding="utf-8"))
-    assert files == sorted(["index.json", "readcode-001/code/lru_cache.c", "readcode-001/public.json",
-                            "readcode-002/code/payments_api.py", "readcode-002/public.json", "readcode-003/public.json"]
-                           + [f"readcode-003/code/{f['path']}" for f in pub3["files"]])
-    assert {e["id"]: e["in_mvp"] for e in index} == {"readcode-001": False, "readcode-002": True, "readcode-003": True}
+    expected = ["index.json"] + [f"{ex}/public.json" for ex in pubs] + [f"{ex}/code/{f['path']}" for ex, pub in pubs.items() for f in pub["files"]]
+    assert files == sorted(expected)
+    assert {e["id"]: e["in_mvp"] for e in index}["readcode-001"] is False
+    assert all(e["in_mvp"] for e in index if e["id"] != "readcode-001")
 
 
 def test_key_content_never_reaches_the_frontend(tmp_path):

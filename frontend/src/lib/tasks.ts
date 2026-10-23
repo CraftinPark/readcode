@@ -1,16 +1,16 @@
 // Task mode: one incident ticket, PR review or trace question at a time.
 // Answers autosave like the full review; submitting produces a task submission
 // (schemas/task-submission.schema.json) for the grader.
-import type { Confidence, PublicExercise, PublicTask, Range, TaskType } from './types'
+import type { PublicExercise, PublicTask, Range, TaskType } from './types'
 
 export interface TaskAnswer {
   startedAt: number
-  ranges: Range[]          // where the candidate says the cause is (incident) or what they point at
+  answers: Record<string, string>   // part id -> option id (multiple-choice parts)
+  ranges: Range[]          // where the candidate says the cause is (text tasks) or what they point at
   explanation: string
   fix: string
   verdict?: 'approve' | 'request_changes'
   option?: string
-  confidence: Confidence
 }
 
 export interface TaskSubmission {
@@ -23,11 +23,11 @@ export interface TaskSubmission {
   submitted_at: string
   time_spent_minutes: number
   locations: Range[]
-  explanation: string
+  answers?: Record<string, string>
+  explanation?: string
   fix?: string
   verdict?: 'approve' | 'request_changes'
   option?: string
-  confidence: Confidence
 }
 
 export const TASK_LABEL: Record<TaskType, string> = {
@@ -51,6 +51,7 @@ export function ticketParts(t: PublicTask): { from: string; quote: string | null
 }
 
 export function canSubmitTask(t: PublicTask, a: TaskAnswer): boolean {
+  if (t.parts) return t.parts.every((p) => !!a.answers[p.id])
   if (!a.explanation.trim()) return false
   if (t.type === 'incident') return a.ranges.length > 0
   if (t.type === 'review_pr') return !!a.verdict
@@ -60,7 +61,7 @@ export function canSubmitTask(t: PublicTask, a: TaskAnswer): boolean {
 const key = (id: string, version: number, task: string) => `readcode:task:${id}:v${version}:${task}`
 
 export function emptyTaskAnswer(): TaskAnswer {
-  return { startedAt: Date.now(), ranges: [], explanation: '', fix: '', confidence: 'fairly_sure' }
+  return { startedAt: Date.now(), answers: {}, ranges: [], explanation: '', fix: '' }
 }
 
 export function loadTaskAnswer(id: string, version: number, task: string): TaskAnswer | null {
@@ -100,10 +101,10 @@ export function buildTaskSubmission(ex: PublicExercise, t: PublicTask, a: TaskAn
     submitted_at: now.toISOString(),
     time_spent_minutes: Math.max(0, Math.round((now.getTime() - a.startedAt) / 6000) / 10),
     locations: [...a.ranges].sort((x, y) => x.file.localeCompare(y.file) || x.start_line - y.start_line),
-    explanation: a.explanation.trim(),
+    ...(t.parts ? { answers: Object.fromEntries(t.parts.map((p) => [p.id, a.answers[p.id]]).filter(([, v]) => v)) } : {}),
+    ...(a.explanation.trim() ? { explanation: a.explanation.trim() } : {}),
     ...(a.fix.trim() ? { fix: a.fix.trim() } : {}),
     ...(t.type === 'review_pr' && a.verdict ? { verdict: a.verdict } : {}),
     ...(t.type === 'trace' && a.option ? { option: a.option } : {}),
-    confidence: a.confidence,
   }
 }

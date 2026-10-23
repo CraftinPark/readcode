@@ -3,6 +3,7 @@ import { Logo } from '../components/Logo'
 import { CodePane } from '../exercise/CodePane'
 import type { CodePaneHandle, LineMark } from '../exercise/CodePane'
 import { Timer } from '../exercise/Header'
+import { Playground } from '../exercise/Playground'
 import { Sidebar } from '../exercise/Sidebar'
 import { loadExercise, primaryFile } from '../lib/files'
 import type { CodeFile } from '../lib/files'
@@ -12,8 +13,8 @@ import {
   taskTitle, ticketParts,
 } from '../lib/tasks'
 import type { TaskAnswer, TaskSubmission } from '../lib/tasks'
-import { CONFIDENCES, LABEL, formatRanges } from '../lib/types'
-import type { PublicExercise, PublicTask, Range } from '../lib/types'
+import { formatRanges } from '../lib/types'
+import type { PublicExercise, PublicTask, Range, TaskPart } from '../lib/types'
 
 const CANDIDATE_ID = 'local' // no accounts yet
 const MINUTES: Record<PublicTask['type'], number> = { incident: 15, review_pr: 10, trace: 5 }
@@ -60,9 +61,16 @@ function TaskWorkspace({ ex, files, task }: { ex: PublicExercise; files: CodeFil
       pendingScroll.current = null
     }
   })
+  // The center shows the code or, for examples that have one, the running playground.
+  const [view, setView] = useState<'code' | 'playground'>('code')
+  const [playgroundOpened, setPlaygroundOpened] = useState(false)
+  const showPlayground = () => { setView('playground'); setPlaygroundOpened(true) }
   const jump = useCallback((line: number, toFile?: string) => {
-    if (toFile && toFile !== path) { setPath(toFile); pendingScroll.current = line } else code.current?.scrollToLine(line)
-  }, [path])
+    setView('code')
+    if (toFile && toFile !== path) { setPath(toFile); pendingScroll.current = line }
+    else if (view !== 'code') pendingScroll.current = line
+    else code.current?.scrollToLine(line)
+  }, [path, view])
   const openFile = (p: string) => { setPath(p); setQuery(''); setTopLine(1); pendingScroll.current = 1 }
 
   const hits = useMemo(() => {
@@ -72,16 +80,20 @@ function TaskWorkspace({ ex, files, task }: { ex: PublicExercise; files: CodeFil
   const activeHit = hits.length ? hits[Math.min(hitIdx, hits.length - 1)] : null
   useEffect(() => { if (activeHit != null) jump(activeHit) }, [query])
 
+  // Multiple-choice tasks are answered in the panel; selecting lines only matters for text tasks.
   const onSelect = useCallback((start: number, end: number) => {
+    if (task.parts) return
     setAnswer((a) => ({ ...a, ranges: [...a.ranges, { file: path, start_line: start, end_line: end }] }))
-  }, [path])
+  }, [path, task])
   const removeRange = (i: number) => setAnswer((a) => ({ ...a, ranges: a.ranges.filter((_, j) => j !== i) }))
 
+  const chosen = useMemo(() => (task.parts ?? []).flatMap((part) =>
+    part.options.filter((o) => o.id === answer.answers[part.id] && o.location).map((o) => o.location!)), [task, answer.answers])
   const marks = useMemo(() => {
     const m = new Map<number, LineMark>()
-    for (const r of answer.ranges) if (r.file === path) for (let n = r.start_line; n <= r.end_line; n++) m.set(n, 'saved')
+    for (const r of [...answer.ranges, ...chosen]) if (r.file === path) for (let n = r.start_line; n <= r.end_line; n++) m.set(n, 'saved')
     return m
-  }, [answer.ranges, path])
+  }, [answer.ranges, chosen, path])
   const fileList = files.map((f) => ({ path: f.path, comments: answer.ranges.filter((r) => r.file === f.path).length }))
 
   const submit = () => {
@@ -120,14 +132,37 @@ function TaskWorkspace({ ex, files, task }: { ex: PublicExercise; files: CodeFil
             jump(hits[i])
           }}
           onJump={jump} hitInfo={hits.length ? `${Math.min(hitIdx, hits.length - 1) + 1} of ${hits.length} · Enter for next` : 'No matches'} />
-        <CodePane ref={code} path={path} tokens={file.tokens} marks={marks} inserts={new Map()} focusLines={null}
-          searchHits={new Set(hits)} activeHit={activeHit} breadcrumb={functionAt(file.sections, topLine)?.name}
-          onSelect={onSelect} onTopLineChange={setTopLine} onShowAll={() => {}} focus={false} canFocus={false}
-          onToggleFocus={() => {}} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          {ex.playground && (
+            <div className="flex h-10 flex-none items-center gap-1 border-b border-code-border bg-code-bar px-3">
+              {(['code', 'playground'] as const).map((v) => (
+                <button key={v} type="button" onClick={() => (v === 'code' ? setView('code') : showPlayground())}
+                  className={`rounded-md px-3 py-1 text-[12.5px] font-medium ${view === v ? 'bg-code-fold text-code-text' : 'text-code-dim hover:text-code-text'}`}>
+                  {v === 'code' ? 'Code' : 'Playground: run it'}
+                </button>
+              ))}
+              <span className="ml-3 text-[11.5px] text-code-dim">Reproduce the ticket against the running service.</span>
+            </div>
+          )}
+          <div className={`min-h-0 flex-1 ${view === 'code' ? 'flex' : 'hidden'}`}>
+            <CodePane ref={code} path={path} tokens={file.tokens} marks={marks} inserts={new Map()} focusLines={null}
+              searchHits={new Set(hits)} activeHit={activeHit} breadcrumb={functionAt(file.sections, topLine)?.name}
+              onSelect={onSelect} onTopLineChange={setTopLine} onShowAll={() => {}} focus={false} canFocus={false}
+              onToggleFocus={() => {}} />
+          </div>
+          {ex.playground && playgroundOpened && (
+            <div className={`min-h-0 flex-1 ${view === 'playground' ? 'flex' : 'hidden'}`}>
+              <Playground example={ex.id} presets={ex.playground.presets} />
+            </div>
+          )}
+        </div>
         <aside className="flex w-[420px] flex-none flex-col overflow-y-auto border-l border-line bg-white">
           <div className="flex flex-col gap-5 p-5">
             <TaskBrief task={task} />
-            <AnswerForm task={task} answer={answer} setAnswer={setAnswer} onJump={jump} onRemove={removeRange} />
+            {task.parts
+              ? <PartsForm parts={task.parts} answers={answer.answers} onJump={jump}
+                  onPick={(part, opt) => setAnswer((a) => ({ ...a, answers: { ...a.answers, [part]: opt } }))} />
+              : <AnswerForm task={task} answer={answer} setAnswer={setAnswer} onJump={jump} onRemove={removeRange} />}
           </div>
         </aside>
       </div>
@@ -250,13 +285,44 @@ function AnswerForm({ task, answer, setAnswer, onJump, onRemove }: {
           <textarea className={`${field} h-[70px]`} value={answer.fix} onChange={(e) => set({ fix: e.target.value })} />
         </label>
       )}
-      <label>
-        <span className={label}>How sure are you?</span>
-        <select value={answer.confidence} onChange={(e) => set({ confidence: e.target.value as TaskAnswer['confidence'] })}
-          className="h-9 w-full rounded-lg border border-line-strong bg-white px-2 text-[13px]">
-          {CONFIDENCES.map((c) => <option key={c} value={c}>{LABEL[c]}</option>)}
-        </select>
-      </label>
+    </div>
+  )
+}
+
+// SAT style: every part is a pick from fixed options, so grading needs no judge.
+function PartsForm({ parts, answers, onPick, onJump }: {
+  parts: TaskPart[]
+  answers: Record<string, string>
+  onPick: (part: string, option: string) => void
+  onJump: (line: number, file?: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-5 border-t border-line pt-5">
+      {parts.map((part, i) => (
+        <fieldset key={part.id}>
+          <legend className="mb-2 text-[13px] font-semibold">{i + 1}. {part.prompt}</legend>
+          <div className="flex flex-col gap-1.5">
+            {part.options.map((o) => {
+              const picked = answers[part.id] === o.id
+              return (
+                <label key={o.id} className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 text-[13px] leading-[1.45] ${picked ? 'border-accent bg-accent-soft' : 'border-line-strong hover:border-ink'}`}>
+                  <input type="radio" name={part.id} className="mt-1" checked={picked} onChange={() => onPick(part.id, o.id)} />
+                  <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                    <b className="font-mono font-semibold">{o.id})</b> {o.text}
+                    {o.location && (
+                      <button type="button" onClick={(e) => { e.preventDefault(); onJump(o.location!.start_line, o.location!.file) }}
+                        className="mt-1 block font-mono text-xs text-accent hover:underline">
+                        {o.location.file} · {formatRanges([o.location])}
+                      </button>
+                    )}
+                    {o.diff && <DiffView diff={o.diff} />}
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+        </fieldset>
+      ))}
     </div>
   )
 }
@@ -270,7 +336,10 @@ function TaskSubmitted({ sub, ex, task }: { sub: TaskSubmission; ex: PublicExerc
       <header className="flex h-14 items-center gap-5 border-b border-line bg-white px-5"><Logo /></header>
       <div className="mx-auto max-w-[760px] px-4 py-10">
         <h1 className="text-xl font-semibold">Submitted: {TASK_LABEL[task.type]} · {taskTitle(task)}</h1>
-        <p className="mt-2 text-muted">{sub.time_spent_minutes} minutes · {sub.locations.length} location{sub.locations.length === 1 ? '' : 's'} · {LABEL[sub.confidence]}</p>
+        <p className="mt-2 text-muted">
+          {sub.time_spent_minutes} minutes
+          {sub.answers ? ` · ${Object.entries(sub.answers).map(([k, v]) => `${k}: ${v}`).join(', ')}` : ` · ${sub.locations.length} location${sub.locations.length === 1 ? '' : 's'}`}
+        </p>
         <div className="mt-5 rounded-[10px] border border-line bg-white p-4 leading-[1.5]">
           <b className="font-semibold">Grading isn't connected to this page yet.</b> To grade locally, save the submission as a file and run{' '}
           <code className="rounded bg-chip px-1.5 py-px font-mono text-[12.5px]">cd backend && python -m grader ../examples/{ex.id} task.json</code>

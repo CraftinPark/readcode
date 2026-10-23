@@ -68,7 +68,6 @@ def test_tasks(task, expected):
 
 def test_task_feedback_names_the_misread_without_the_answer():
     r = grade_task(EX, load("T7-weak"), FakeJudge())
-    assert r["overconfident"] is True
     assert "saved response is already there" in r["feedback"]
     r = grade_task(EX, load("T1-weak"), FakeJudge())
     assert r["score"] == 0 and "not in the lines you pointed at" in r["feedback"]

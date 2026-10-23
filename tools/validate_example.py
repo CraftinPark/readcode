@@ -27,7 +27,8 @@ except ImportError:
 
 FILES = ("public", "key", "manifest")
 KEY_ONLY_FIELDS = {"key_points", "anchors", "mechanism_anchors", "red_herrings", "fix", "grader_instructions",
-                   "skills", "answer_bug_ids", "verdict", "has_defect", "correct_option", "distractors"}
+                   "skills", "answer_bug_ids", "verdict", "has_defect", "correct_option", "distractors",
+                   "part_answers", "part_weights"}
 DEFAULT_TAXONOMY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "taxonomy", "taxonomy.json")
 HINT_WORDS = re.compile(r"\b(BUG|FIXME|XXX|HACK|seeded|mutant|injected|vulnerab\w*)\b", re.I)
 
@@ -154,7 +155,35 @@ def check_tags(rep, tax, pub, key, code_text=""):
             rep.warn("public.json", f"names the skill '{s}' that one of its bugs is tagged with; this may give the bug away")
 
 
+def check_parts(rep, where, parts, k, files):
+    """Multiple-choice parts: one answer per part, real options, weights summing to 100, valid locations."""
+    answers, weights = k.get("part_answers", {}), k.get("part_weights", {})
+    ids = [x["id"] for x in parts]
+    if len(ids) != len(set(ids)):
+        rep.err(where, "duplicate part ids")
+    if set(answers) != set(ids):
+        rep.err(where, f"parts are {sorted(ids)} but part_answers covers {sorted(answers)}")
+    if set(weights) != set(ids) or not math.isclose(sum(weights.values()), 100):
+        rep.err(where, f"part_weights must cover {sorted(ids)} and sum to 100 (got {weights})")
+    for part in parts:
+        opts = {o["id"] for o in part["options"]}
+        if len(opts) != len(part["options"]):
+            rep.err(where, f"part {part['id']} has duplicate option ids")
+        if part["id"] in answers and answers[part["id"]] not in opts:
+            rep.err(where, f"part {part['id']}: answer '{answers[part['id']]}' is not one of {sorted(opts)}")
+        for o in part["options"]:
+            r = o.get("location")
+            if r and (r["file"] not in files or not 1 <= r["start_line"] <= r["end_line"] <= files[r["file"]]):
+                rep.err(where, f"part {part['id']} option {o['id']}: lines {r['start_line']}-{r['end_line']} not in {r['file']}")
+    for d in k.get("distractors", {}):
+        part_id, _, opt = d.partition(".")
+        part = next((x for x in parts if x["id"] == part_id), None)
+        if parts and (part is None or opt not in {o["id"] for o in part["options"]} or opt == answers.get(part_id)):
+            rep.err(where, f"distractor '{d}' is not a wrong option of a part")
+
+
 def check_tasks(rep, pub, key):
+    files = {f["path"]: f["line_count"] for f in pub["files"]}
     ptasks = {t["id"]: t for t in pub.get("tasks", [])}
     ktasks = {t["task_id"]: t for t in key.get("tasks", [])}
     if len(ptasks) != len(pub.get("tasks", [])) or len(ktasks) != len(key.get("tasks", [])):
@@ -167,6 +196,8 @@ def check_tasks(rep, pub, key):
         if p["type"] != k["type"]:
             rep.err(where, f"type is '{k['type']}' in the key but '{p['type']}' in public")
             continue
+        if "parts" in p or "part_answers" in k:
+            check_parts(rep, where, p.get("parts", []), k, files)
         if k["type"] == "incident":
             unknown = sorted(set(k["answer_bug_ids"]) - bug_ids)
             if unknown:

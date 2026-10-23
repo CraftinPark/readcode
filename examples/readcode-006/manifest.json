@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "readcode-006",
+  "source": {
+    "kind": "scraped",
+    "repo": "https://github.com/saleor/saleor",
+    "path": "saleor/graphql/product/bulk_mutations/products.py",
+    "commit": "6c450429d3ad587be9b26ee3743b66c316356cbc",
+    "license_spdx": "BSD-3-Clause",
+    "retrieved_at": "2026-10-23T05:49:50Z",
+    "original_sha256": "2ad2f7115566e6ff197347164448a6c9e112a011062286e049ff9838ab4bc44f"
+  },
+  "baseline": {
+    "path": "internal/baseline",
+    "sha256": "a2964ab491b6446a9ccc3b746c07ebc16d55bd613695d360a0ce9b4583764de7",
+    "changes_summary": "Excerpts of the files above with the upstream fix (PR #11714) applied.",
+    "gate_a": {
+      "passed": false,
+      "tests_run": 0,
+      "tools": [
+        "upstream-ci"
+      ],
+      "evidence_file": "internal/evidence/gate_a.txt"
+    }
+  },
+  "shipped": [
+    {
+      "path": "LICENSE-saleor.txt",
+      "sha256": "2d12a921903d021dfbf2d088d6747e7e48c03c5206ca5dc50d080f2ebf90573f"
+    },
+    {
+      "path": "saleor/graphql/product/bulk_mutations/products.py",
+      "sha256": "b7832928298a5e35ea59c06a94ee98f06c45b1aa0debf94d5d73034d0738ef8d"
+    },
+    {
+      "path": "saleor/warehouse/models.py",
+      "sha256": "b0c5e87d3d91a11e553a25fc8ade2a7535d65e770b625266b2a95f6aba38fb13"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "B1",
+      "file": "saleor/graphql/product/bulk_mutations/products.py",
+      "line": 171,
+      "change": {
+        "old": "            )\n            if is_created or (\n                (stock.quantity - stock.quantity_allocated)\n                <= 0\n                < stock_data[\"quantity\"]\n            ):\n                transaction.on_commit(\n                    lambda: manager.product_variant_back_in_stock(stock)\n                )\n\n            if stock_data[\"quantity\"] <= 0 or (\n                stock_data[\"quantity\"] - stock.quantity_allocated <= 0\n            ):\n",
+        "new": "            )\n\n            if is_created or (stock.quantity <= 0 and stock_data[\"quantity\"] > 0):\n                transaction.on_commit(\n                    lambda: manager.product_variant_back_in_stock(stock)\n                )\n\n            if stock_data[\"quantity\"] <= 0:\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "upstream-fix",
+        "evidence_file": "internal/evidence/B1.txt"
+      }
+    }
+  ],
+  "review": {
+    "status": "pending"
+  }
+}

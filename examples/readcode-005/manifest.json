@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "readcode-005",
+  "source": {
+    "kind": "scraped",
+    "repo": "https://github.com/saleor/saleor",
+    "path": "saleor/graphql/checkout/resolvers.py",
+    "commit": "1a1d9dffe6105f00d9f7537a4b47981ddcfa0c05",
+    "license_spdx": "BSD-3-Clause",
+    "retrieved_at": "2026-10-23T05:49:49Z",
+    "original_sha256": "52a8dab94946ee7a45d64cb94a55dbce25ef9ee25e1b7fff872fdf1859e04b80"
+  },
+  "baseline": {
+    "path": "internal/baseline",
+    "sha256": "75bf8e8df89b65575890e634aaa5eed36dba3718e400bb873ffe0d8aef80e46c",
+    "changes_summary": "Excerpts of the files above with the upstream fix (PR #5268) applied.",
+    "gate_a": {
+      "passed": false,
+      "tests_run": 0,
+      "tools": [
+        "upstream-ci"
+      ],
+      "evidence_file": "internal/evidence/gate_a.txt"
+    }
+  },
+  "shipped": [
+    {
+      "path": "LICENSE-saleor.txt",
+      "sha256": "8de271b17e605242c3606d3c3a8f4dc79629566b1495c76f7f1e4b95f0cfec80"
+    },
+    {
+      "path": "saleor/graphql/checkout/resolvers.py",
+      "sha256": "5a2bdae625eb26eb0042aec8ee70c5a122a1bd52e6dedbbe712c7eab5961826b"
+    },
+    {
+      "path": "saleor/graphql/checkout/schema.py",
+      "sha256": "ae9d3e094045b80df991b1d9a65d03f0d24d8994bebabf543d1ef4968cd48cc1"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "B1",
+      "file": "saleor/graphql/checkout/resolvers.py",
+      "line": 17,
+      "change": {
+        "old": "def resolve_checkout(info, token):\n    checkout = models.Checkout.objects.filter(token=token).first()\n\n    if checkout is None:\n        return None\n\n    # resolve checkout for anonymous customer\n    if not checkout.user:\n        return checkout\n\n    # resolve checkout for logged-in customer\n    if checkout.user == info.context.user:\n        return checkout\n\n    # resolve checkout for staff user\n    requester = get_user_or_service_account_from_context(info.context)\n    if requester.has_perm(CheckoutPermissions.MANAGE_CHECKOUTS):\n        return checkout\n\n    return None\n",
+        "new": "def resolve_checkout(token):\n    return models.Checkout.objects.filter(token=token).first()\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "upstream-fix",
+        "evidence_file": "internal/evidence/B1.txt"
+      }
+    }
+  ],
+  "review": {
+    "status": "pending"
+  }
+}

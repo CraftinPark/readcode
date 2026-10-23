@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "id": "readcode-004",
+  "version": 1,
+  "scoring": {
+    "total": 100,
+    "sections": {
+      "comprehension": 0,
+      "bugs": 100,
+      "design": 0,
+      "improvements": 0
+    }
+  },
+  "comprehension": [],
+  "bugs": [
+    {
+      "id": "B1",
+      "title": "Async request event is saved without include_in_calculations",
+      "severity": "high",
+      "category": "money state",
+      "skills": [
+        "money-invariants",
+        "state-machine"
+      ],
+      "locations": [
+        {
+          "file": "saleor/payment/utils.py",
+          "function": "create_transaction_event_from_request_and_webhook_response",
+          "start_line": 172,
+          "end_line": 200
+        }
+      ],
+      "description": "When the payment app answers a refund or charge request with only a PSP reference (async flow), the request event is saved with include_in_calculations left at its default, False. calculate_transaction_amount_based_on_events excludes such events, so the requested amount never moves into the pending field.",
+      "mechanism_anchors": [
+        "include_in_calculations defaults to False",
+        "the calculation excludes events with include_in_calculations=False",
+        "async flow returns only a PSP reference, no event",
+        "the sync path (create_transaction_event_for_transaction_session) sets the flag; this path does not"
+      ],
+      "fix": "Set the request event's include_in_calculations flag to True when it is updated with the PSP reference (upstream PR #14380).",
+      "weight": 100
+    }
+  ],
+  "design": [],
+  "improvements": {
+    "weight": 0,
+    "expected_themes": []
+  },
+  "red_herrings": [],
+  "grader_instructions": [
+    "Task-only example built from a real upstream bug. The multiple-choice parts are graded exactly; no judge is needed.",
+    "Upstream: issue saleor/saleor#14327, fixed by PR #14380."
+  ],
+  "tasks": [
+    {
+      "task_id": "T1",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B1"
+      ],
+      "part_answers": {
+        "where": "b",
+        "why": "b",
+        "fix": "c"
+      },
+      "part_weights": {
+        "where": 40,
+        "why": 40,
+        "fix": 20
+      },
+      "distractors": {
+        "where.a": "the filter is intended: failure events are created with the flag off precisely so they are not counted",
+        "where.c": "the refund amount is right ($10.00); the problem is how it is counted afterwards",
+        "where.d": "this rule is correct; it never sees the request event because the event is filtered out earlier",
+        "why.a": "the pending amount comes from the request event, not a success event; it would show as pending if the request were counted",
+        "why.c": "the transaction item is saved separately with update_fields; the request event save does not touch it",
+        "why.d": "the PSP reference is stored on the line just before the save",
+        "fix.a": "failure events (create_failed_transaction_event) and other non-amount events would start counting and corrupt the totals",
+        "fix.b": "the request would stay pending forever, even after the provider confirms success",
+        "fix.d": "response events are already created with the flag on; the request event is the one left out"
+      }
+    }
+  ]
+}

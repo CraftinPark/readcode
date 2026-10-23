@@ -39,12 +39,32 @@
       }
     },
     "questions": {
-      "type": "array", "minItems": 1,
+      "type": "array", "description": "Empty for a task-only example (no full review)",
       "items": {"$ref": "#/$defs/prompt_c"}
     },
     "design_prompts": {
-      "type": "array", "minItems": 1,
+      "type": "array",
       "items": {"$ref": "#/$defs/prompt_d"}
+    },
+    "playground": {
+      "type": "object", "additionalProperties": false, "required": ["kind", "presets"],
+      "description": "A runnable sandbox of the shipped code (served by backend/playground) for reproducing tickets.",
+      "properties": {
+        "kind": {"const": "backend-console"},
+        "presets": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["label", "method", "path"],
+            "properties": {
+              "label": {"type": "string", "minLength": 3},
+              "method": {"enum": ["GET", "POST"]},
+              "path": {"type": "string", "pattern": "^/"},
+              "headers": {"type": "object", "additionalProperties": {"type": "string"}},
+              "body": {"type": "object"}
+            }
+          }
+        }
+      }
     },
     "tasks": {
       "type": "array", "description": "Extra question types (incident ticket, PR review, trace). Not scored by the grader yet.",
@@ -60,6 +80,22 @@
       "type": "object", "additionalProperties": false, "required": ["id", "text"],
       "properties": {"id": {"type": "string", "pattern": "^D[0-9]+$"}, "text": {"type": "string", "minLength": 10}}
     },
+    "options": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "text"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z]$"},
+          "text": {"type": "string", "minLength": 1},
+          "location": {"$ref": "#/$defs/location"},
+          "diff": {"type": "string", "minLength": 5}
+        }
+      }
+    },
+    "location": {
+      "type": "object", "additionalProperties": false, "required": ["file", "start_line", "end_line"],
+      "properties": {"file": {"type": "string"}, "start_line": {"type": "integer", "minimum": 1}, "end_line": {"type": "integer", "minimum": 1}}
+    },
     "task": {
       "type": "object", "additionalProperties": false, "required": ["id", "type", "text"],
       "properties": {
@@ -67,11 +103,17 @@
         "type": {"enum": ["incident", "review_pr", "trace"]},
         "text": {"type": "string", "minLength": 10},
         "diff": {"type": "string", "minLength": 10},
-        "options": {
-          "type": "array", "minItems": 2,
+        "options": {"$ref": "#/$defs/options"},
+        "parts": {
+          "type": "array", "minItems": 1,
+          "description": "Multiple-choice parts (SAT style), e.g. where / why / fix. Graded exactly, no judge.",
           "items": {
-            "type": "object", "additionalProperties": false, "required": ["id", "text"],
-            "properties": {"id": {"type": "string", "pattern": "^[a-z]$"}, "text": {"type": "string", "minLength": 1}}
+            "type": "object", "additionalProperties": false, "required": ["id", "prompt", "options"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+              "prompt": {"type": "string", "minLength": 5},
+              "options": {"$ref": "#/$defs/options"}
+            }
           }
         }
       },

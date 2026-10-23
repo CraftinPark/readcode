@@ -9,6 +9,5 @@
   "time_spent_minutes": 3,
   "locations": [],
   "explanation": "Looks right: 4xx is now retried, which fixes the ticket.",
-  "confidence": "fairly_sure",
   "verdict": "approve"
 }

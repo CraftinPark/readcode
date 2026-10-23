@@ -9,6 +9,5 @@
   "time_spent_minutes": 2,
   "locations": [],
   "explanation": "Idempotency returns the same charge.",
-  "confidence": "certain",
   "option": "a"
 }

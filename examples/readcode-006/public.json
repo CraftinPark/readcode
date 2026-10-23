@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "readcode-006",
+  "version": 1,
+  "title": "Stock updates: the missing back-in-stock webhook",
+  "language": "python",
+  "difficulty": "medium",
+  "track": "payments-infra",
+  "area": "developer-platform",
+  "rung": 2,
+  "topics": [
+    "api",
+    "payments"
+  ],
+  "estimated_minutes": 12,
+  "files": [
+    {
+      "path": "saleor/graphql/product/bulk_mutations/products.py",
+      "line_count": 186
+    },
+    {
+      "path": "saleor/warehouse/models.py",
+      "line_count": 27
+    },
+    {
+      "path": "LICENSE-saleor.txt",
+      "line_count": 30
+    }
+  ],
+  "license": {
+    "spdx": "BSD-3-Clause",
+    "attribution": "Code from Saleor (github.com/saleor/saleor), (c) Saleor Commerce and Mirumee Software, BSD-3-Clause. Excerpted; see LICENSE-saleor.txt.",
+    "source_url": "https://github.com/saleor/saleor"
+  },
+  "questions": [],
+  "design_prompts": [],
+  "tasks": [
+    {
+      "id": "T1",
+      "type": "incident",
+      "text": "Support ticket #6630 (a merchant): \"We listen for PRODUCT_VARIANT_BACK_IN_STOCK to email waiting customers. A variant had 5 in stock; two orders allocated all 5, and we got OUT_OF_STOCK. Then we restocked to 15 with productVariantStocksUpdate. BACK_IN_STOCK never came. If we set the stock to 0 first and then to 15, it does.\" Find the cause.",
+      "parts": [
+        {
+          "id": "where",
+          "prompt": "Where is the cause?",
+          "options": [
+            {
+              "id": "a",
+              "text": "update_or_create_variant_stocks: the condition that sends product_variant_back_in_stock",
+              "location": {
+                "file": "saleor/graphql/product/bulk_mutations/products.py",
+                "start_line": 173,
+                "end_line": 176
+              }
+            },
+            {
+              "id": "b",
+              "text": "update_or_create_variant_stocks: bulk_update saves only the quantity column",
+              "location": {
+                "file": "saleor/graphql/product/bulk_mutations/products.py",
+                "start_line": 186,
+                "end_line": 186
+              }
+            },
+            {
+              "id": "c",
+              "text": "Stock.increase_stock: adds to quantity with an F expression",
+              "location": {
+                "file": "saleor/warehouse/models.py",
+                "start_line": 18,
+                "end_line": 22
+              }
+            },
+            {
+              "id": "d",
+              "text": "ProductVariantStocksUpdate.perform_mutation: loads the warehouses for the input",
+              "location": {
+                "file": "saleor/graphql/product/bulk_mutations/products.py",
+                "start_line": 123,
+                "end_line": 160
+              }
+            }
+          ]
+        },
+        {
+          "id": "why",
+          "prompt": "Why is no webhook sent in the merchant's sequence?",
+          "options": [
+            {
+              "id": "a",
+              "text": "The lambda passed to on_commit captures stock late, so the webhook goes out for a different stock."
+            },
+            {
+              "id": "b",
+              "text": "bulk_update writes only quantity, so quantity_allocated is reset to 0 and the variant looks in stock already."
+            },
+            {
+              "id": "c",
+              "text": "The check compares the stored quantity (5) with zero and ignores the 5 allocated units, so the variant never counts as out of stock and the restock to 15 is not seen as coming back."
+            },
+            {
+              "id": "d",
+              "text": "get_or_create creates a new Stock row for the update, so is_created is True and the webhook is skipped."
+            }
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "Which change fixes it?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Fire whenever the quantity goes up",
+              "diff": "--- a/saleor/graphql/product/bulk_mutations/products.py\n+++ b/saleor/graphql/product/bulk_mutations/products.py\n@@ update_or_create_variant_stocks\n-            if is_created or (stock.quantity <= 0 and stock_data[\"quantity\"] > 0):\n+            if is_created or stock_data[\"quantity\"] > stock.quantity:\n"
+            },
+            {
+              "id": "b",
+              "text": "Compare the new quantity with the allocated units",
+              "diff": "--- a/saleor/graphql/product/bulk_mutations/products.py\n+++ b/saleor/graphql/product/bulk_mutations/products.py\n@@ update_or_create_variant_stocks\n-            if is_created or (stock.quantity <= 0 and stock_data[\"quantity\"] > 0):\n+            if is_created or (stock.quantity <= 0 and stock_data[\"quantity\"] > stock.quantity_allocated):\n"
+            },
+            {
+              "id": "c",
+              "text": "Use available stock (quantity minus allocated) on both checks",
+              "diff": "--- a/saleor/graphql/product/bulk_mutations/products.py\n+++ b/saleor/graphql/product/bulk_mutations/products.py\n@@ update_or_create_variant_stocks\n-\n-            if is_created or (stock.quantity <= 0 and stock_data[\"quantity\"] > 0):\n+            if is_created or (\n+                (stock.quantity - stock.quantity_allocated)\n+                <= 0\n+                < stock_data[\"quantity\"]\n+            ):\n                 transaction.on_commit(\n                     lambda: manager.product_variant_back_in_stock(stock)\n                 )\n \n-            if stock_data[\"quantity\"] <= 0:\n+            if stock_data[\"quantity\"] <= 0 or (\n+                stock_data[\"quantity\"] - stock.quantity_allocated <= 0\n+            ):\n"
+            },
+            {
+              "id": "d",
+              "text": "Save quantity_allocated too",
+              "diff": "--- a/saleor/graphql/product/bulk_mutations/products.py\n+++ b/saleor/graphql/product/bulk_mutations/products.py\n@@ update_or_create_variant_stocks\n-        warehouse_models.Stock.objects.bulk_update(stocks, [\"quantity\"])\n+        warehouse_models.Stock.objects.bulk_update(stocks, [\"quantity\", \"quantity_allocated\"])\n"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

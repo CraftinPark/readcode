@@ -32,8 +32,6 @@ def main():
             return
         print(f"{r['exercise_id']} {r['task_id']} ({r['task_type']})  candidate={r['candidate_id']}  judge={r['judge']}")
         print(f"SCORE {r['score']} / {r['max']}   " + "  ".join(f"{k} {v}" for k, v in r["parts"].items()))
-        if r["overconfident"]:
-            print("overconfident: marked sure, scored under 40")
         if r["feedback"]:
             print("feedback: " + r["feedback"])
         return

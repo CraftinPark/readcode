@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "readcode-005",
+  "version": 1,
+  "title": "Checkout query: whose checkout is it?",
+  "language": "python",
+  "difficulty": "easy",
+  "track": "payments-infra",
+  "area": "payments-core",
+  "rung": 1,
+  "topics": [
+    "api",
+    "payments"
+  ],
+  "estimated_minutes": 8,
+  "files": [
+    {
+      "path": "saleor/graphql/checkout/resolvers.py",
+      "line_count": 18
+    },
+    {
+      "path": "saleor/graphql/checkout/schema.py",
+      "line_count": 83
+    },
+    {
+      "path": "LICENSE-saleor.txt",
+      "line_count": 37
+    }
+  ],
+  "license": {
+    "spdx": "BSD-3-Clause",
+    "attribution": "Code from Saleor (github.com/saleor/saleor), (c) Saleor Commerce and Mirumee Software, BSD-3-Clause. Excerpted; see LICENSE-saleor.txt.",
+    "source_url": "https://github.com/saleor/saleor"
+  },
+  "questions": [],
+  "design_prompts": [],
+  "tasks": [
+    {
+      "id": "T1",
+      "type": "incident",
+      "text": "Security report #118: \"While logged in as my own customer account, I opened a checkout link a friend had pasted in a chat. The storefront showed their cart, shipping address and email. Anyone who sees a checkout token can read that checkout through the API.\" Find the cause.",
+      "parts": [
+        {
+          "id": "where",
+          "prompt": "Where is the cause?",
+          "options": [
+            {
+              "id": "a",
+              "text": "The checkout field's token argument, declared as a UUID",
+              "location": {
+                "file": "saleor/graphql/checkout/schema.py",
+                "start_line": 34,
+                "end_line": 38
+              }
+            },
+            {
+              "id": "b",
+              "text": "resolvers.resolve_checkout: the lookup by token",
+              "location": {
+                "file": "saleor/graphql/checkout/resolvers.py",
+                "start_line": 17,
+                "end_line": 18
+              }
+            },
+            {
+              "id": "c",
+              "text": "CheckoutQueries.resolve_checkouts: the list of all checkouts",
+              "location": {
+                "file": "saleor/graphql/checkout/schema.py",
+                "start_line": 53,
+                "end_line": 55
+              }
+            },
+            {
+              "id": "d",
+              "text": "resolvers.resolve_checkout_lines: all checkout lines",
+              "location": {
+                "file": "saleor/graphql/checkout/resolvers.py",
+                "start_line": 7,
+                "end_line": 9
+              }
+            }
+          ]
+        },
+        {
+          "id": "why",
+          "prompt": "Why does that let one customer read another's checkout?",
+          "options": [
+            {
+              "id": "a",
+              "text": "The token is a UUID, which can be guessed by counting up from a known one."
+            },
+            {
+              "id": "b",
+              "text": "The list of all checkouts has no permission check, so anyone can page through them."
+            },
+            {
+              "id": "c",
+              "text": "It returns the checkout for any token without comparing the checkout's owner with the requester; the requester (info) is not even passed in."
+            },
+            {
+              "id": "d",
+              "text": "Checkout tokens are reused across customers when a cart is merged after login."
+            }
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "Which change fixes it without breaking the storefront?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Require the manage-checkouts permission",
+              "diff": "--- a/saleor/graphql/checkout/schema.py\n+++ b/saleor/graphql/checkout/schema.py\n@@ CheckoutQueries\n+    @permission_required(CheckoutPermissions.MANAGE_CHECKOUTS)\n     def resolve_checkout(self, *_args, token):\n         return resolve_checkout(token)\n"
+            },
+            {
+              "id": "b",
+              "text": "Only return checkouts owned by the requester",
+              "diff": "--- a/saleor/graphql/checkout/resolvers.py\n+++ b/saleor/graphql/checkout/resolvers.py\n@@\n-def resolve_checkout(token):\n-    return models.Checkout.objects.filter(token=token).first()\n+def resolve_checkout(info, token):\n+    return models.Checkout.objects.filter(token=token, user=info.context.user).first()\n"
+            },
+            {
+              "id": "c",
+              "text": "Make tokens harder to guess",
+              "diff": "--- a/saleor/checkout/models.py\n+++ b/saleor/checkout/models.py\n@@ class Checkout\n-    token = models.UUIDField(primary_key=True, default=uuid4, editable=False)\n+    token = models.CharField(primary_key=True, default=partial(secrets.token_urlsafe, 32), max_length=64, editable=False)\n"
+            },
+            {
+              "id": "d",
+              "text": "Allow anonymous checkouts, the owner, and staff or apps with the permission",
+              "diff": "--- a/saleor/graphql/checkout/resolvers.py\n+++ b/saleor/graphql/checkout/resolvers.py\n@@\n-def resolve_checkout(token):\n-    return models.Checkout.objects.filter(token=token).first()\n+def resolve_checkout(info, token):\n+    checkout = models.Checkout.objects.filter(token=token).first()\n+    if checkout is None:\n+        return None\n+    if not checkout.user:\n+        return checkout\n+    if checkout.user == info.context.user:\n+        return checkout\n+    requester = get_user_or_service_account_from_context(info.context)\n+    if requester.has_perm(CheckoutPermissions.MANAGE_CHECKOUTS):\n+        return checkout\n+    return None\n--- a/saleor/graphql/checkout/schema.py\n+++ b/saleor/graphql/checkout/schema.py\n-    def resolve_checkout(self, *_args, token):\n-        return resolve_checkout(token)\n+    def resolve_checkout(self, info, token):\n+        return resolve_checkout(info, token)\n"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

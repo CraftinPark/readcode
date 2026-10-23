@@ -9,6 +9,5 @@
   "time_spent_minutes": 3,
   "locations": [],
   "explanation": "The key is shared so it should conflict.",
-  "confidence": "fairly_sure",
   "option": "b"
 }

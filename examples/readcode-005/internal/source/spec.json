@@ -1,0 +1,51 @@
+{
+  "repo": "saleor/saleor",
+  "license_spdx": "BSD-3-Clause",
+  "license_file": "LICENSE-saleor.txt",
+  "issue": 5245,
+  "pr": 5268,
+  "base_commit": "1a1d9dffe6105f00d9f7537a4b47981ddcfa0c05",
+  "merge_commit": "ee60c497c0dd41a590642e0f0f20e2ccb1e053d0",
+  "files": [
+    {
+      "path": "saleor/graphql/checkout/resolvers.py",
+      "ranges": [
+        [
+          1,
+          15
+        ]
+      ]
+    },
+    {
+      "path": "saleor/graphql/checkout/schema.py",
+      "ranges": [
+        [
+          1,
+          80
+        ]
+      ]
+    }
+  ],
+  "fixes": [
+    {
+      "id": "B1-imports",
+      "record": false,
+      "file": "saleor/graphql/checkout/resolvers.py",
+      "buggy": "from ...checkout import models\n",
+      "fixed": "from ...checkout import models\nfrom ...core.permissions import CheckoutPermissions\nfrom ..utils import get_user_or_service_account_from_context\n"
+    },
+    {
+      "id": "B1",
+      "file": "saleor/graphql/checkout/resolvers.py",
+      "buggy": "def resolve_checkout(token):\n    return models.Checkout.objects.filter(token=token).first()\n",
+      "fixed": "def resolve_checkout(info, token):\n    checkout = models.Checkout.objects.filter(token=token).first()\n\n    if checkout is None:\n        return None\n\n    # resolve checkout for anonymous customer\n    if not checkout.user:\n        return checkout\n\n    # resolve checkout for logged-in customer\n    if checkout.user == info.context.user:\n        return checkout\n\n    # resolve checkout for staff user\n    requester = get_user_or_service_account_from_context(info.context)\n    if requester.has_perm(CheckoutPermissions.MANAGE_CHECKOUTS):\n        return checkout\n\n    return None\n"
+    },
+    {
+      "id": "B1-caller",
+      "record": false,
+      "file": "saleor/graphql/checkout/schema.py",
+      "buggy": "    def resolve_checkout(self, *_args, token):\n        return resolve_checkout(token)\n",
+      "fixed": "    def resolve_checkout(self, info, token):\n        return resolve_checkout(info, token)\n"
+    }
+  ]
+}

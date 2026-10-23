@@ -9,6 +9,5 @@
   "time_spent_minutes": 2,
   "locations": [],
   "explanation": "The key is in_progress in the shared database and under 60 seconds old.",
-  "confidence": "certain",
   "option": "b"
 }

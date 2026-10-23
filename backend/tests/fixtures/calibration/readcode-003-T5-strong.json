@@ -9,6 +9,5 @@
   "time_spent_minutes": 4,
   "locations": [],
   "explanation": "Request changes: 3xx responses would still count as delivered, and the HTTP client does not follow redirects for POST. Only 2xx means the merchant accepted the event; the correct condition is 200 <= status < 300.",
-  "confidence": "certain",
   "verdict": "request_changes"
 }

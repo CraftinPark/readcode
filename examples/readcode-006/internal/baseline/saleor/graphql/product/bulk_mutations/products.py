@@ -1,0 +1,191 @@
+# saleor/graphql/product/bulk_mutations/products.py from saleor/saleor at 6c450429d3 (lines 725-908; other code removed).
+# BSD-3-Clause, see LICENSE-saleor.txt.
+
+class ProductVariantStocksCreate(BaseMutation):
+    product_variant = graphene.Field(
+        ProductVariant, description="Updated product variant."
+    )
+
+    class Arguments:
+        variant_id = graphene.ID(
+            required=True,
+            description="ID of a product variant for which stocks will be created.",
+        )
+        stocks = NonNullList(
+            StockInput,
+            required=True,
+            description="Input list of stocks to create.",
+        )
+
+    class Meta:
+        description = "Creates stocks for product variant."
+        permissions = (ProductPermissions.MANAGE_PRODUCTS,)
+        error_type_class = BulkStockError
+        error_type_field = "bulk_stock_errors"
+
+    @classmethod
+    @traced_atomic_transaction()
+    def perform_mutation(cls, _root, info: ResolveInfo, /, **data):
+        manager = get_plugin_manager_promise(info.context).get()
+        errors: defaultdict[str, List[ValidationError]] = defaultdict(list)
+        stocks = data["stocks"]
+        variant = cls.get_node_or_error(
+            info, data["variant_id"], only_type=ProductVariant
+        )
+        if stocks:
+            warehouses = cls.clean_stocks_input(variant, stocks, errors)
+            if errors:
+                raise ValidationError(errors)
+            new_stocks = create_stocks(variant, stocks, warehouses)
+
+            for stock in new_stocks:
+                transaction.on_commit(
+                    lambda: manager.product_variant_back_in_stock(stock)
+                )
+
+        StocksWithAvailableQuantityByProductVariantIdCountryCodeAndChannelLoader(
+            info.context
+        ).clear((variant.id, None, None))
+
+        variant = ChannelContext(node=variant, channel_slug=None)
+        return cls(product_variant=variant)
+
+    @classmethod
+    def clean_stocks_input(cls, variant, stocks_data, errors):
+        warehouse_ids = [stock["warehouse"] for stock in stocks_data]
+        cls.check_for_duplicates(warehouse_ids, errors)
+        warehouses = cls.get_nodes_or_error(
+            warehouse_ids, "warehouse", only_type=Warehouse
+        )
+        existing_stocks = variant.stocks.filter(warehouse__in=warehouses).values_list(
+            "warehouse__pk", flat=True
+        )
+        error_msg = "Stock for this warehouse already exists for this product variant."
+        indexes = []
+        for warehouse_pk in existing_stocks:
+            warehouse_id = graphene.Node.to_global_id("Warehouse", warehouse_pk)
+            indexes.extend(
+                [i for i, id in enumerate(warehouse_ids) if id == warehouse_id]
+            )
+        cls.update_errors(
+            errors, error_msg, "warehouse", StockErrorCode.UNIQUE, indexes
+        )
+
+        return warehouses
+
+    @classmethod
+    def check_for_duplicates(
+        cls, warehouse_ids, errors: defaultdict[str, List[ValidationError]]
+    ):
+        duplicates = {id for id in warehouse_ids if warehouse_ids.count(id) > 1}
+        error_msg = "Duplicated warehouse ID."
+        indexes = []
+        for duplicated_id in duplicates:
+            indexes.append(
+                [i for i, id in enumerate(warehouse_ids) if id == duplicated_id][-1]
+            )
+        cls.update_errors(
+            errors, error_msg, "warehouse", StockErrorCode.UNIQUE, indexes
+        )
+
+    @classmethod
+    def update_errors(
+        cls, errors: defaultdict[str, List[ValidationError]], msg, field, code, indexes
+    ):
+        for index in indexes:
+            error = ValidationError(msg, code=code, params={"index": index})
+            errors[field].append(error)
+
+
+class ProductVariantStocksUpdate(ProductVariantStocksCreate):
+    class Meta:
+        description = "Update stocks for product variant."
+        permissions = (ProductPermissions.MANAGE_PRODUCTS,)
+        error_type_class = BulkStockError
+        error_type_field = "bulk_stock_errors"
+
+    class Arguments:
+        variant_id = graphene.ID(
+            required=False,
+            description="ID of a product variant for which stocks will be updated.",
+        )
+        sku = graphene.String(
+            required=False,
+            description="SKU of product variant for which stocks will be updated.",
+        )
+        stocks = NonNullList(
+            StockInput,
+            required=True,
+            description="Input list of stocks to create or update.",
+        )
+
+    @classmethod
+    def perform_mutation(cls, _root, info: ResolveInfo, /, **data):
+        errors: defaultdict[str, List[ValidationError]] = defaultdict(list)
+        stocks = data["stocks"]
+        sku = data.get("sku")
+        variant_id = data.get("variant_id")
+
+        validate_one_of_args_is_in_mutation("sku", sku, "variant_id", variant_id)
+
+        if variant_id:
+            variant = cls.get_node_or_error(info, variant_id, only_type=ProductVariant)
+        if sku:
+            variant = models.ProductVariant.objects.filter(sku=sku).first()
+            if not variant:
+                raise ValidationError(
+                    {
+                        "sku": ValidationError(
+                            f"Couldn't resolve to a node: {sku}", code="not_found"
+                        )
+                    }
+                )
+
+        if stocks:
+            warehouse_ids = [stock["warehouse"] for stock in stocks]
+            cls.check_for_duplicates(warehouse_ids, errors)
+            if errors:
+                raise ValidationError(errors)
+            warehouses = cls.get_nodes_or_error(
+                warehouse_ids, "warehouse", only_type=Warehouse
+            )
+
+            manager = get_plugin_manager_promise(info.context).get()
+            cls.update_or_create_variant_stocks(variant, stocks, warehouses, manager)
+
+        StocksWithAvailableQuantityByProductVariantIdCountryCodeAndChannelLoader(
+            info.context
+        ).clear((variant.id, None, None))
+
+        variant = ChannelContext(node=variant, channel_slug=None)
+        return cls(product_variant=variant)
+
+    @classmethod
+    @traced_atomic_transaction()
+    def update_or_create_variant_stocks(cls, variant, stocks_data, warehouses, manager):
+
+        stocks = []
+        for stock_data, warehouse in zip(stocks_data, warehouses):
+            stock, is_created = warehouse_models.Stock.objects.get_or_create(
+                product_variant=variant, warehouse=warehouse
+            )
+            if is_created or (
+                (stock.quantity - stock.quantity_allocated)
+                <= 0
+                < stock_data["quantity"]
+            ):
+                transaction.on_commit(
+                    lambda: manager.product_variant_back_in_stock(stock)
+                )
+
+            if stock_data["quantity"] <= 0 or (
+                stock_data["quantity"] - stock.quantity_allocated <= 0
+            ):
+                transaction.on_commit(
+                    lambda: manager.product_variant_out_of_stock(stock)
+                )
+
+            stock.quantity = stock_data["quantity"]
+            stocks.append(stock)
+
+        warehouse_models.Stock.objects.bulk_update(stocks, ["quantity"])

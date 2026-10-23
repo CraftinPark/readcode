@@ -88,6 +88,72 @@
       "text": "This runs on SQLite with BEGIN IMMEDIATE. What would you need to change to run it on Postgres with several app servers and two webhook workers?"
     }
   ],
+  "playground": {
+    "kind": "backend-console",
+    "presets": [
+      {
+        "label": "Charge $25 with a key",
+        "method": "POST",
+        "path": "/charges",
+        "headers": {
+          "Authorization": "Bearer sk_test_acme",
+          "Idempotency-Key": "order-88231"
+        },
+        "body": {
+          "amount": 2500,
+          "currency": "usd",
+          "payment_method": "pm_card_visa"
+        }
+      },
+      {
+        "label": "Charge without a key",
+        "method": "POST",
+        "path": "/charges",
+        "headers": {
+          "Authorization": "Bearer sk_test_acme"
+        },
+        "body": {
+          "amount": 1000,
+          "currency": "usd",
+          "payment_method": "pm_card_visa"
+        }
+      },
+      {
+        "label": "Declined card",
+        "method": "POST",
+        "path": "/charges",
+        "headers": {
+          "Authorization": "Bearer sk_test_acme"
+        },
+        "body": {
+          "amount": 500,
+          "currency": "usd",
+          "payment_method": "pm_card_declined"
+        }
+      },
+      {
+        "label": "List my charges",
+        "method": "GET",
+        "path": "/charges",
+        "headers": {
+          "Authorization": "Bearer sk_test_acme"
+        }
+      },
+      {
+        "label": "Charge as Globex",
+        "method": "POST",
+        "path": "/charges",
+        "headers": {
+          "Authorization": "Bearer sk_test_globex"
+        },
+        "body": {
+          "amount": 4200,
+          "currency": "usd",
+          "payment_method": "pm_card_visa"
+        }
+      }
+    ]
+  },
   "tasks": [
     {
       "id": "T1",

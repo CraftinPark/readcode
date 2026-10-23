@@ -4,6 +4,7 @@ Deterministic parts are decided here: did the candidate point at the cause,
 pick the right verdict, pick the right option. Only the written explanation
 and fix go to the judge (judge_task), which scores them 0..1.
 
+    parts      each multiple-choice part's weight   (exact; used when the key has part_answers)
     incident   locate 40 + mechanism 40 + fix 20   (mechanism and fix count only if located)
     review_pr  verdict 50 + reasons 50              (reasons count only with the right verdict)
     trace      option 100                           (a wrong option reports the misread it is built on)
@@ -18,7 +19,6 @@ from .matcher import _near
 SCHEMAS = Path(__file__).resolve().parents[2] / "schemas"
 _task_v = Draft202012Validator(json.loads((SCHEMAS / "task-submission.schema.json").read_text(encoding="utf-8")),
                                format_checker=FormatChecker())
-CONFIDENT = {"fairly_sure", "certain"}
 
 
 class TaskError(Exception):
@@ -46,10 +46,23 @@ def grade_task(example_dir, sub, judge):
         raise TaskError(f"{sub['task_id']} is a {ktask['type']} task, not {sub['task_type']}")
 
     parts, feedback = {}, None
-    if ktask["type"] == "incident":
+    if "part_answers" in ktask:
+        # Multiple choice (SAT style): exact, no judge. Wrong picks report the misread
+        # that option was built on, never the right answer.
+        chosen = sub.get("answers", {})
+        misreads = []
+        for pid, right in ktask["part_answers"].items():
+            ok = chosen.get(pid) == right
+            parts[pid] = float(ktask["part_weights"][pid]) if ok else 0.0
+            if not ok and chosen.get(pid):
+                misreads.append(f"{pid}: {ktask['distractors'].get(f'{pid}.{chosen[pid]}', 'not this one')}")
+            elif not ok:
+                misreads.append(f"{pid}: not answered")
+        feedback = "; ".join(misreads) or None
+    elif ktask["type"] == "incident":
         bugs = [b for b in key["bugs"] if b["id"] in ktask["answer_bug_ids"]]
         located = any(_near(c, k) for c in sub["locations"] for b in bugs for k in b["locations"])
-        j = judge.judge_task({"type": "incident", "explanation": sub["explanation"], "fix": sub.get("fix", ""),
+        j = judge.judge_task({"type": "incident", "explanation": sub.get("explanation", ""), "fix": sub.get("fix", ""),
                               "anchors": [a for b in bugs for a in b["mechanism_anchors"] + [b["title"]]],
                               "fix_key": " ".join(b["fix"] for b in bugs)})
         parts = {"locate": 40.0 if located else 0.0,
@@ -59,7 +72,7 @@ def grade_task(example_dir, sub, judge):
             feedback = "The cause is not in the lines you pointed at. Follow the symptom back through the code path it describes."
     elif ktask["type"] == "review_pr":
         right = sub.get("verdict") == ktask["verdict"]
-        j = judge.judge_task({"type": "review_pr", "explanation": sub["explanation"], "fix": "",
+        j = judge.judge_task({"type": "review_pr", "explanation": sub.get("explanation", ""), "fix": "",
                               "anchors": ktask["anchors"], "fix_key": ""})
         parts = {"verdict": 50.0 if right else 0.0, "reasons": round(50 * j["explanation"], 1) if right else 0.0}
         if not right:
@@ -74,5 +87,4 @@ def grade_task(example_dir, sub, judge):
     total = round(sum(parts.values()), 1)
     return {"exercise_id": public["id"], "task_id": sub["task_id"], "task_type": ktask["type"],
             "candidate_id": sub["candidate_id"], "judge": judge.name, "score": total, "max": 100,
-            "parts": parts, "overconfident": sub["confidence"] in CONFIDENT and total < 40,
-            "feedback": feedback}
+            "parts": parts, "feedback": feedback}

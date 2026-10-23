@@ -1,0 +1,37 @@
+{
+  "repo": "saleor/saleor",
+  "license_spdx": "BSD-3-Clause",
+  "license_file": "LICENSE-saleor.txt",
+  "issue": 11637,
+  "pr": 11714,
+  "base_commit": "6c450429d3ad587be9b26ee3743b66c316356cbc",
+  "merge_commit": "ded69f9c7097324acf3100f3aec34cb0172babd9",
+  "files": [
+    {
+      "path": "saleor/graphql/product/bulk_mutations/products.py",
+      "ranges": [
+        [
+          725,
+          908
+        ]
+      ]
+    },
+    {
+      "path": "saleor/warehouse/models.py",
+      "ranges": [
+        [
+          377,
+          400
+        ]
+      ]
+    }
+  ],
+  "fixes": [
+    {
+      "id": "B1",
+      "file": "saleor/graphql/product/bulk_mutations/products.py",
+      "buggy": "            )\n\n            if is_created or (stock.quantity <= 0 and stock_data[\"quantity\"] > 0):\n                transaction.on_commit(\n                    lambda: manager.product_variant_back_in_stock(stock)\n                )\n\n            if stock_data[\"quantity\"] <= 0:\n",
+      "fixed": "            )\n            if is_created or (\n                (stock.quantity - stock.quantity_allocated)\n                <= 0\n                < stock_data[\"quantity\"]\n            ):\n                transaction.on_commit(\n                    lambda: manager.product_variant_back_in_stock(stock)\n                )\n\n            if stock_data[\"quantity\"] <= 0 or (\n                stock_data[\"quantity\"] - stock.quantity_allocated <= 0\n            ):\n"
+    }
+  ]
+}
