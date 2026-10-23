@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "exercise_id": "readcode-003",
+  "exercise_version": 1,
+  "candidate_id": "calibration-strong",
+  "submitted_at": "2026-10-22T12:00:00Z",
+  "time_spent_minutes": 46,
+  "comprehension": {
+    "C1": "claim() runs its own transaction: it deletes expired keys and inserts the key as in_progress, and that commits before the network call. The card network is called outside any transaction. store_charge then inserts the charge, the charge.succeeded event and the saved response in one transaction. A declined card is stored with a 402 saved for replay; a timeout releases the key and returns 503.",
+    "C2": "It is the outbox pattern: the event commits or rolls back together with the change it describes. With its own transaction an event could commit for a change that later rolls back, or be lost if the process dies after the change commits. Delivery happens later in a worker so a slow merchant endpoint never blocks the API request.",
+    "C3": "The network deduplicates on reference: the same reference returns the original authorization instead of charging again. With an Idempotency-Key the reference should be derived from the account and key so retries after a timeout or crash reuse it; otherwise a retry after the card was charged charges the card twice.",
+    "C4": "The Signature header is an HMAC-SHA256 of timestamp.body with the endpoint's shared secret. The receiver recomputes it with its copy of the secret and compares in constant time. The timestamp is signed so the receiver can reject events older than a few minutes to stop replays."
+  },
+  "bugs": [
+    {
+      "id": "c1",
+      "locations": [
+        {
+          "file": "payments/app.py",
+          "start_line": 91,
+          "end_line": 91
+        }
+      ],
+      "function": "create_charge",
+      "severity": "critical",
+      "confidence": "certain",
+      "explanation": "The reference sent to the card network is always random. The network deduplicates on reference, so a random one defeats it: when the network charges the card but times out, or the server dies mid-request and a retry takes the key over after CLAIM_TIMEOUT, the retry gets a new reference and the card is authorized twice. Our DB shows one charge but the bank shows two authorizations. idempotency.network_reference is defined but unused.",
+      "fix": "reference = idempotency.network_reference(acct, idempotency_key) if idempotency_key else db.new_id(\"ref\")"
+    },
+    {
+      "id": "c2",
+      "locations": [
+        {
+          "file": "payments/idempotency.py",
+          "start_line": 48,
+          "end_line": 48
+        }
+      ],
+      "function": "claim",
+      "severity": "high",
+      "confidence": "certain",
+      "explanation": "Unit mismatch: created_ms is a milliseconds column but the cutoff subtracts the TTL in seconds, so keys live 86.4 seconds instead of 24 hours. The DELETE in claim removes the key before the lookup, so a retry after about 1.5 minutes creates a second charge record.",
+      "fix": "cutoff = now_ms - int(KEY_TTL.total_seconds() * 1000)"
+    },
+    {
+      "id": "c3",
+      "locations": [
+        {
+          "file": "payments/webhooks.py",
+          "start_line": 64,
+          "end_line": 64
+        }
+      ],
+      "function": "deliver_due",
+      "severity": "high",
+      "confidence": "certain",
+      "explanation": "status < 500 should be 200 <= status < 300. A 4xx during a deploy or outage is temporary, but the event is marked delivered and never retried, which contradicts the documented 3-day retry.",
+      "fix": "if status is not None and 200 <= status < 300:"
+    },
+    {
+      "id": "c4",
+      "locations": [
+        {
+          "file": "payments/webhooks.py",
+          "start_line": 50,
+          "end_line": 50
+        }
+      ],
+      "function": "deliver_due",
+      "severity": "critical",
+      "confidence": "certain",
+      "explanation": "cache_key is ev['type'] instead of ev['account_id'], so events from different accounts in one batch share the cached endpoint. It leaks other merchants' payloads (data exposure), signs them with the wrong merchant's secret, and drops the right merchant's event.",
+      "fix": "cache_key = ev[\"account_id\"]"
+    }
+  ],
+  "design": {
+    "D1": "Too short: a slow but alive request is taken over and both servers act on the same key; the takeover is only safe because the network reference is derived from the key (dedup downstream). Too long: a retry after a crash is blocked with 409 for that long. Set it above the card network timeout plus processing time, or use a lease with a heartbeat.",
+    "D2": "The reserved amount stays counted as refunded but no money moved and no refund row exists, so the merchant cannot refund that amount again (a stuck reservation). Record a pending refund row in the same transaction as the reservation, and have a sweeper resolve pending refunds by asking the network with the same refund reference.",
+    "D3": "The conditional UPDATE reservation still works under READ COMMITTED because the update takes a row lock. The idempotency claim needs INSERT ... ON CONFLICT on (account_id, key) instead of BEGIN IMMEDIATE. Two webhook workers need SELECT ... FOR UPDATE SKIP LOCKED or a lease so an event is not sent twice. Use a connection per request or a pool; the module-level connection is not shareable across threads."
+  },
+  "improvements": [
+    {
+      "title": "Pending refunds",
+      "detail": "Pass the refund through a pending state so a crash between reserve and network call can be recovered."
+    },
+    {
+      "title": "Claim webhook events",
+      "detail": "Webhook delivery should claim events with a lease or SKIP LOCKED so two workers do not send the same event."
+    },
+    {
+      "title": "Connection per request",
+      "detail": "A shared module-level sqlite connection is used from several threads; use one connection per request."
+    },
+    {
+      "title": "At-least-once",
+      "detail": "Receivers can get duplicates anyway; include the event id and document at-least-once delivery."
+    }
+  ],
+  "notes": []
+}

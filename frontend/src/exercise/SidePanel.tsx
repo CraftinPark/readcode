@@ -38,7 +38,7 @@ function PromptList({ items, answers, onAnswer, functions, onJump }: {
   answers: Record<string, string>
   onAnswer: (id: string, text: string) => void
   functions: OutlineFunction[]
-  onJump: (line: number) => void
+  onJump: (line: number, file?: string) => void
 }) {
   const [active, setActive] = useState<string | null>(() => items.find((q) => !answers[q.id]?.trim())?.id ?? null)
   const names = functions.map((f) => f.name)
@@ -56,7 +56,7 @@ function PromptList({ items, answers, onAnswer, functions, onJump }: {
                 <div className="font-medium leading-[1.4]"><PromptText text={q.text} fnNames={names} /></div>
               </div>
               {mentioned && (
-                <button type="button" onClick={() => onJump(mentioned.line)}
+                <button type="button" onClick={() => onJump(mentioned.line, mentioned.file)}
                   className="ml-8 h-7 self-start rounded-md border border-line-strong bg-white px-2.5 text-xs font-medium hover:border-ink">
                   Jump to {mentioned.name} · line {mentioned.line} →
                 </button>
@@ -164,7 +164,7 @@ interface Props {
   functions: OutlineFunction[]
   onAnswer: (section: 'comprehension' | 'design', id: string, text: string) => void
   onImprovements: (items: Improvement[]) => void
-  onJump: (line: number) => void
+  onJump: (line: number, file?: string) => void
   onReview: () => void
 }
 
@@ -179,7 +179,7 @@ export function SidePanel(p: Props) {
     design: `${answered(p.design, p.prompts)}/${p.prompts.length}`,
     improve: `${improveCount}`,
   }
-  const jumpTo = (c: CodeComment) => p.onJump(c.ranges[0].start_line)
+  const jumpTo = (c: CodeComment) => p.onJump(c.ranges[0].start_line, c.ranges[0].file)
   const next = TABS[TABS.indexOf(p.tab) + 1]
 
   return (

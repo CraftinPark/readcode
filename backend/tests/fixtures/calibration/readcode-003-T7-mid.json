@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "exercise_id": "readcode-003",
+  "exercise_version": 1,
+  "task_id": "T7",
+  "task_type": "trace",
+  "candidate_id": "calibration-mid",
+  "submitted_at": "2026-10-22T12:00:00Z",
+  "time_spent_minutes": 3,
+  "locations": [],
+  "explanation": "The key is shared so it should conflict.",
+  "confidence": "fairly_sure",
+  "option": "b"
+}

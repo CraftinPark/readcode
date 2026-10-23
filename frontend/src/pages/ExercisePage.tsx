@@ -9,8 +9,9 @@ import { Header } from '../exercise/Header'
 import { SidePanel } from '../exercise/SidePanel'
 import type { Tab } from '../exercise/SidePanel'
 import { Sidebar } from '../exercise/Sidebar'
-import { highlightFor } from '../lib/highlight'
-import { allFunctions, functionAt, outlineFor } from '../lib/outline'
+import { loadExercise, primaryFile } from '../lib/files'
+import type { CodeFile } from '../lib/files'
+import { allFunctions, functionAt } from '../lib/outline'
 import { clearAnswers, emptyAnswers, loadAnswers, saveAnswers } from '../lib/storage'
 import { buildSubmission } from '../lib/submission'
 import type { Submission } from '../lib/submission'
@@ -20,38 +21,29 @@ const CONTEXT_LINES = 3
 const CANDIDATE_ID = 'local' // no accounts yet
 
 export default function ExercisePage({ id }: { id: string }) {
-  const [ex, setEx] = useState<PublicExercise | null>(null)
-  const [source, setSource] = useState<string | null>(null)
+  const [loaded, setLoaded] = useState<{ ex: PublicExercise; files: CodeFile[] } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      try {
-        const res = await fetch(`/exercises/${id}/public.json`)
-        if (!res.ok) throw new Error(`Exercise ${id} was not found.`)
-        const pub: PublicExercise = await res.json()
-        // One file per exercise for now; multi-file exercises need a file switcher.
-        const code = await fetch(`/exercises/${id}/code/${pub.files[0].path}`).then((r) => r.text())
-        if (!cancelled) { setEx(pub); setSource(code) }
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e))
-      }
-    })()
+    loadExercise(id).then(
+      (l) => { if (!cancelled) setLoaded(l) },
+      (e) => { if (!cancelled) setError(e instanceof Error ? e.message : String(e)) },
+    )
     return () => { cancelled = true }
   }, [id])
 
   if (error) return <Message title="Could not open this exercise" body={error} />
-  if (!ex || source == null) return <Message title="Loading…" />
-  return <Workspace key={`${ex.id}:${ex.version}`} ex={ex} source={source} />
+  if (!loaded) return <Message title="Loading…" />
+  return <Workspace key={`${loaded.ex.id}:${loaded.ex.version}`} ex={loaded.ex} files={loaded.files} />
 }
 
-function Workspace({ ex, source }: { ex: PublicExercise; source: string }) {
-  const path = ex.files[0].path
-  const lines = useMemo(() => source.replace(/\n$/, '').split('\n'), [source])
-  const tokens = useMemo(() => highlightFor(ex.language, source.replace(/\n$/, '')), [ex.language, source])
-  const sections = useMemo(() => outlineFor(ex.language, lines), [ex.language, lines])
-  const functions = useMemo(() => allFunctions(sections), [sections])
+function Workspace({ ex, files }: { ex: PublicExercise; files: CodeFile[] }) {
+  const [path, setPath] = useState(() => primaryFile(ex, files).path)
+  const file = files.find((f) => f.path === path) ?? files[0]
+  const { lines, tokens, sections } = file
+  // Functions from every file, so a question can link to one in another file.
+  const functions = useMemo(() => files.flatMap((f) => allFunctions(f.sections).map((fn) => ({ ...fn, file: f.path }))), [files])
 
   const [answers, setAnswers] = useState<Answers>(() => loadAnswers(ex.id, ex.version) ?? emptyAnswers())
   useEffect(() => saveAnswers(ex.id, ex.version, answers), [answers, ex])
@@ -69,14 +61,16 @@ function Workspace({ ex, source }: { ex: PublicExercise; source: string }) {
   const pendingScroll = useRef<number | null>(null)
 
   // ---- navigation
-  const jump = useCallback((line: number) => {
-    if (focus) {
+  const jump = useCallback((line: number, toFile?: string) => {
+    if (focus || (toFile && toFile !== path)) {
       setFocus(false)
+      if (toFile) setPath(toFile)
       pendingScroll.current = line
     } else {
       code.current?.scrollToLine(line)
     }
-  }, [focus])
+  }, [focus, path])
+  const openFile = (p: string) => { setPath(p); setQuery(''); setTopLine(1); pendingScroll.current = 1 }
   useEffect(() => {
     if (pendingScroll.current != null) {
       code.current?.scrollToLine(pendingScroll.current)
@@ -143,43 +137,45 @@ function Workspace({ ex, source }: { ex: PublicExercise; source: string }) {
   }
   const deleteComment = (cid: string) => setAnswers((a) => ({ ...a, comments: a.comments.filter((c) => c.id !== cid) }))
 
+  // Only ranges in the open file are drawn; a comment's card sits under its last range in that file.
+  const here = (c: CodeComment) => c.ranges.filter((r) => r.file === path)
   const marks = useMemo(() => {
     const m = new Map<number, LineMark>()
     for (const c of answers.comments) {
       if (c.id === draft?.editingId) continue
-      for (const r of c.ranges) for (let n = r.start_line; n <= r.end_line; n++) m.set(n, 'saved')
+      for (const r of here(c)) for (let n = r.start_line; n <= r.end_line; n++) m.set(n, 'saved')
     }
-    for (const r of draft?.comment.ranges ?? []) for (let n = r.start_line; n <= r.end_line; n++) m.set(n, 'draft')
+    for (const r of draft ? here(draft.comment) : []) for (let n = r.start_line; n <= r.end_line; n++) m.set(n, 'draft')
     return m
-  }, [answers.comments, draft])
+  }, [answers.comments, draft, path])
 
-  const lastLine = (c: CodeComment) => Math.max(...c.ranges.map((r) => r.end_line))
+  const lastLine = (c: CodeComment) => Math.max(...here(c).map((r) => r.end_line))
   const inserts = useMemo(() => {
     const m = new Map<number, ReactNode[]>()
     const add = (line: number, node: ReactNode) => m.set(line, [...(m.get(line) ?? []), node])
     for (const c of answers.comments) {
-      if (c.id === draft?.editingId) continue
+      if (c.id === draft?.editingId || !here(c).length) continue
       add(lastLine(c), <CommentCard key={c.id} c={c} onDelete={() => deleteComment(c.id)}
         onEdit={() => setDraft({ editingId: c.id, linking: false, comment: { ...c } })} />)
     }
-    if (draft && draft.comment.ranges.length) {
+    if (draft && here(draft.comment).length) {
       add(lastLine(draft.comment), <Composer key="composer" draft={draft} onSave={saveDraft} onCancel={() => setDraft(null)}
         onChange={(comment) => setDraft({ ...draft, comment })} onToggleLink={() => setDraft({ ...draft, linking: !draft.linking })} />)
     }
     return new Map([...m].map(([k, v]) => [k, <>{v}</>]))
-  }, [answers.comments, draft])
+  }, [answers.comments, draft, path])
 
   const focusLines = useMemo(() => {
     if (!focus) return null
     const s = new Set<number>()
-    const ranges = [...answers.comments.flatMap((c) => c.ranges), ...(draft?.comment.ranges ?? [])]
+    const ranges = [...answers.comments.flatMap(here), ...(draft ? here(draft.comment) : [])]
     for (const r of ranges) {
       for (let n = Math.max(1, r.start_line - CONTEXT_LINES); n <= Math.min(lines.length, r.end_line + CONTEXT_LINES); n++) s.add(n)
       const fn = functionAt(sections, r.start_line)
       if (fn) s.add(fn.line)
     }
     return s
-  }, [focus, answers.comments, draft, lines.length, sections])
+  }, [focus, answers.comments, draft, lines.length, sections, path])
 
   // ---- progress
   const answeredCount = [...ex.questions.map((q) => answers.comprehension[q.id]), ...ex.design_prompts.map((d) => answers.design[d.id])]
@@ -187,9 +183,13 @@ function Workspace({ ex, source }: { ex: PublicExercise; source: string }) {
   const totalPrompts = ex.questions.length + ex.design_prompts.length
   const savedCount = useMemo(() => {
     const m = new Map<string, number>()
-    for (const c of answers.comments) if (c.function) m.set(c.function, (m.get(c.function) ?? 0) + 1)
+    for (const c of answers.comments) if (c.function && here(c).length) m.set(c.function, (m.get(c.function) ?? 0) + 1)
     return m
-  }, [answers.comments])
+  }, [answers.comments, path])
+  const fileList = useMemo(() => files.map((f) => ({
+    path: f.path,
+    comments: answers.comments.filter((c) => c.ranges.some((r) => r.file === f.path)).length,
+  })), [files, answers.comments])
 
   const submit = () => {
     setSubmitted(buildSubmission(ex, answers, CANDIDATE_ID))
@@ -201,10 +201,10 @@ function Workspace({ ex, source }: { ex: PublicExercise; source: string }) {
 
   return (
     <div className="flex h-screen flex-col bg-canvas">
-      <Header ex={ex} lines={lines.length} answeredCount={answeredCount} totalPrompts={totalPrompts}
+      <Header ex={ex} lines={files.reduce((n, f) => n + f.lines.length, 0)} answeredCount={answeredCount} totalPrompts={totalPrompts}
         commentCount={answers.comments.length} startedAt={answers.startedAt} onSubmit={() => setReviewing(true)} />
       <div className="flex min-h-0 flex-1">
-        <Sidebar ref={search} sections={sections} currentFn={fnAt(topLine)} savedCount={savedCount}
+        <Sidebar ref={search} files={fileList} activeFile={path} onOpenFile={openFile} sections={sections} currentFn={fnAt(topLine)} savedCount={savedCount}
           draftFn={draft && !draft.editingId ? draft.comment.function : undefined}
           query={query} onQuery={onQuery} onNextHit={onNextHit} onJump={jump}
           hitInfo={hits.length ? `${Math.min(hitIdx, hits.length - 1) + 1} of ${hits.length} · Enter for next` : 'No matches'} />

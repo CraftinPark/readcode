@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "exercise_id": "readcode-003",
+  "exercise_version": 1,
+  "task_id": "T1",
+  "task_type": "incident",
+  "candidate_id": "calibration-weak",
+  "submitted_at": "2026-10-22T12:00:00Z",
+  "time_spent_minutes": 6,
+  "locations": [
+    {
+      "file": "payments/idempotency.py",
+      "start_line": 48,
+      "end_line": 48
+    }
+  ],
+  "explanation": "Idempotency keys expire too fast.",
+  "confidence": "certain"
+}

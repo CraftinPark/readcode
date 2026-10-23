@@ -1,0 +1,26 @@
+== B1 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.48s
+
+== B1 on shipped: FAIL
+F                                                                        [100%]
+================================== FAILURES ===================================
+________ test_B1_retry_after_a_failure_does_not_charge_the_card_twice _________
+
+tmp_path = WindowsPath('C:/Users/chdan/AppData/Local/Temp/pytest-of-chdan/pytest-23/test_B1_retry_after_a_failure_0')
+
+    def test_B1_retry_after_a_failure_does_not_charge_the_card_twice(tmp_path):
+        # The network charges the card but times out before answering; the client retries.
+        client, network, clock, conn = make(tmp_path, FlakyNetwork(CardNetworkTimeout()))
+        h = {**ACME, "Idempotency-Key": "order-7"}
+        assert client.post("/charges", headers=h, json=VISA).status_code == 503
+        assert client.post("/charges", headers=h, json=VISA).status_code == 200
+>       assert network.total_authorized() == VISA["amount"]
+E       assert 5000 == 2500
+E        +  where 5000 = total_authorized()
+E        +    where total_authorized = <test_gates.FlakyNetwork object at 0x00000254AF70A900>.total_authorized
+
+internal\verification\test_gates.py:89: AssertionError
+=========================== short test summary info ===========================
+FAILED internal\verification\test_gates.py::test_B1_retry_after_a_failure_does_not_charge_the_card_twice
+1 failed in 0.53s

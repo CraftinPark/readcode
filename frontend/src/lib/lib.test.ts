@@ -6,6 +6,9 @@ import { describe, expect, it } from 'vitest'
 import { highlightC, highlightFor } from './highlight'
 import { allFunctions, functionAt, outlineFor, parseOutline, parsePythonOutline } from './outline'
 import { buildSubmission } from './submission'
+import { languageOf, prepareFile, primaryFile } from './files'
+import { buildTaskSubmission, canSubmitTask, taskTitle, ticketParts } from './tasks'
+import type { TaskAnswer } from './tasks'
 import type { Answers, PublicExercise } from './types'
 
 const ROOT = resolve(__dirname, '../../..')
@@ -88,6 +91,47 @@ describe('python outline and highlight', () => {
       tokens[i].forEach((t) => expect(t.kind).toBe('str'))
     }
     expect(tokens[n - 1].some((t) => t.kind === 'pre') || pyLines[n - 1].trim() === '').toBe(true)
+  })
+})
+
+describe('multi-file exercises and tasks', () => {
+  const EX3 = resolve(ROOT, 'examples/readcode-003')
+  const pub3: PublicExercise = JSON.parse(readFileSync(resolve(EX3, 'public.json'), 'utf8'))
+  const files = pub3.files.map((f) => prepareFile(f.path, readFileSync(resolve(EX3, 'code', f.path), 'utf8')))
+
+  it('prepares every file and opens the main code file first', () => {
+    files.forEach((f, i) => expect(f.lines.length).toBe(pub3.files[i].line_count))
+    expect(languageOf('README.md')).toBe('text')
+    expect(files.find((f) => f.path === 'README.md')!.sections).toEqual([])
+    expect(primaryFile(pub3, files).path).toBe('payments/app.py')
+  })
+
+  it('titles tickets and splits out the customer quote', () => {
+    const t1 = pub3.tasks!.find((t) => t.id === 'T1')!
+    expect(taskTitle(t1)).toBe('Support ticket #5120 (Acme)')
+    const { from, quote, ask } = ticketParts(t1)
+    expect(from).toBe('Support ticket #5120 (Acme)')
+    expect(quote).toMatch(/^A customer was charged twice/)
+    expect(ask).toMatch(/^Find the cause/)
+  })
+
+  it('builds task submissions that match the schema', () => {
+    const schema = JSON.parse(readFileSync(resolve(ROOT, 'schemas/task-submission.schema.json'), 'utf8'))
+    const ajv = new Ajv2020({ allErrors: true })
+    addFormats(ajv)
+    const validate = ajv.compile(schema)
+    const t1 = pub3.tasks!.find((t) => t.id === 'T1')!
+    const t5 = pub3.tasks!.find((t) => t.id === 'T5')!
+    const a: TaskAnswer = { startedAt: Date.parse('2026-10-22T10:00:00Z'), ranges: [{ file: 'payments/app.py', start_line: 91, end_line: 91 }],
+      explanation: '  random reference  ', fix: '', confidence: 'certain' }
+    expect(canSubmitTask(t1, a)).toBe(true)
+    expect(canSubmitTask(t1, { ...a, ranges: [] })).toBe(false)
+    const sub = buildTaskSubmission(pub3, t1, a, 'local', new Date('2026-10-22T10:09:00Z'))
+    expect(validate(sub)).toBe(true)
+    expect(sub).toMatchObject({ task_id: 'T1', task_type: 'incident', explanation: 'random reference', time_spent_minutes: 9 })
+    expect(canSubmitTask(t5, { ...a, ranges: [] })).toBe(false)              // a review needs a verdict
+    const review = buildTaskSubmission(pub3, t5, { ...a, ranges: [], verdict: 'request_changes' }, 'local')
+    expect(validate(review)).toBe(true)
   })
 })
 

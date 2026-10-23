@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "exercise_id": "readcode-003",
+  "exercise_version": 1,
+  "task_id": "T7",
+  "task_type": "trace",
+  "candidate_id": "calibration-weak",
+  "submitted_at": "2026-10-22T12:00:00Z",
+  "time_spent_minutes": 2,
+  "locations": [],
+  "explanation": "Idempotency returns the same charge.",
+  "confidence": "certain",
+  "option": "a"
+}

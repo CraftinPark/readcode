@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://readcode.example/schemas/task-submission.schema.json",
+  "title": "ReadCode task submission: one incident ticket, PR review or trace answer",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "exercise_id", "exercise_version", "task_id", "task_type", "candidate_id",
+               "submitted_at", "time_spent_minutes", "locations", "explanation", "confidence"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "exercise_id": {"type": "string", "pattern": "^readcode-[0-9]{3,}$"},
+    "exercise_version": {"type": "integer", "minimum": 1},
+    "task_id": {"type": "string", "pattern": "^T[0-9]+$"},
+    "task_type": {"enum": ["incident", "review_pr", "trace"]},
+    "candidate_id": {"type": "string", "minLength": 1},
+    "submitted_at": {"type": "string", "format": "date-time"},
+    "time_spent_minutes": {"type": "number", "minimum": 0},
+    "locations": {
+      "type": "array",
+      "description": "Where the candidate says the cause is (incident), or lines they point at",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["file", "start_line", "end_line"],
+        "properties": {
+          "file": {"type": "string"},
+          "start_line": {"type": "integer", "minimum": 1},
+          "end_line": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "explanation": {"type": "string"},
+    "fix": {"type": "string"},
+    "verdict": {"enum": ["approve", "request_changes"]},
+    "option": {"type": "string", "pattern": "^[a-z]$"},
+    "confidence": {"enum": ["guess", "fairly_sure", "certain"]}
+  },
+  "allOf": [
+    {"if": {"properties": {"task_type": {"const": "incident"}}}, "then": {"properties": {"locations": {"minItems": 1}}}},
+    {"if": {"properties": {"task_type": {"const": "review_pr"}}}, "then": {"required": ["verdict"]}},
+    {"if": {"properties": {"task_type": {"const": "trace"}}}, "then": {"required": ["option"]}}
+  ]
+}

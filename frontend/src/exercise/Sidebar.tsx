@@ -2,6 +2,9 @@ import { forwardRef } from 'react'
 import type { OutlineSection } from '../lib/outline'
 
 interface Props {
+  files: { path: string; comments: number }[]
+  activeFile: string
+  onOpenFile: (path: string) => void
   sections: OutlineSection[]
   currentFn: string | undefined
   savedCount: Map<string, number>
@@ -26,7 +29,31 @@ export const Sidebar = forwardRef<HTMLInputElement, Props>(function Sidebar(p, s
           className="h-[34px] w-full rounded-lg border border-line-strong bg-white px-2.5 text-[13px] outline-none focus:border-accent" />
         {p.query && <div className="mt-1 px-1 text-[11px] text-muted">{p.hitInfo}</div>}
       </div>
+      {p.files.length > 1 && (
+        <>
+          <div className="px-2 pb-1 text-[11px] font-semibold tracking-[0.06em] text-muted">FILES</div>
+          <div className="mb-3 flex flex-col gap-0.5">
+            {p.files.map((f) => {
+              const slash = f.path.lastIndexOf('/')
+              const active = f.path === p.activeFile
+              return (
+                <button key={f.path} type="button" onClick={() => p.onOpenFile(f.path)} title={f.path}
+                  className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left font-mono text-[12.5px] text-ink ${active ? 'bg-accent-soft font-medium' : 'hover:bg-chip'}`}>
+                  <span className="truncate">
+                    {slash >= 0 && <span className="text-muted">{f.path.slice(0, slash + 1)}</span>}
+                    {f.path.slice(slash + 1)}
+                  </span>
+                  {f.comments > 0 && (
+                    <b className="min-w-4 rounded-lg bg-accent px-[5px] py-px text-center font-sans text-[11px] font-semibold text-white">{f.comments}</b>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
       <div className="px-2 pb-1 text-[11px] font-semibold tracking-[0.06em] text-muted">OUTLINE</div>
+      {p.sections.length === 0 && <div className="px-2 py-1 text-[12.5px] text-muted">No outline for this file.</div>}
       {p.sections.map((s) => (
         <div key={s.line} className="flex flex-col gap-0.5">
           <button type="button" onClick={() => p.onJump(s.line)}

@@ -58,7 +58,8 @@ def validate_submission(public, submission):
 
 def load_example(example_dir):
     ex = Path(example_dir)
-    return json.loads((ex / "public.json").read_text()), json.loads((ex / "key.json").read_text())
+    return (json.loads((ex / "public.json").read_text(encoding="utf-8")),
+            json.loads((ex / "key.json").read_text(encoding="utf-8")))
 
 
 def grade(example_dir, submission, judge):
@@ -68,6 +69,10 @@ def grade(example_dir, submission, judge):
     cands = matcher.all_candidates(submission["bugs"], key["bugs"])
     request = build_request(public, key, submission, cands)
     resp = check_response(request, judge.judge(request))
+    # Pointing at a listed red herring's lines is a claim even if the judge missed the wording.
+    for cid, i in matcher.red_herrings_by_location(submission["bugs"], key["red_herrings"], cands).items():
+        if resp["red_herrings"].get(cid) is None:
+            resp["red_herrings"][cid] = i
     judged = {(p["comment_id"], p["bug_id"]): p for p in resp["bug_pairs"]}
     claims = {cid for cid, rh in resp["red_herrings"].items() if rh is not None}
     assigned = matcher.assign(cands, judged, claims)

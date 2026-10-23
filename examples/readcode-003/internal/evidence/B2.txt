@@ -1,0 +1,26 @@
+== B2 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.43s
+
+== B2 on shipped: FAIL
+F                                                                        [100%]
+================================== FAILURES ===================================
+_____________________ test_B2_a_key_is_kept_for_24_hours ______________________
+
+tmp_path = WindowsPath('C:/Users/chdan/AppData/Local/Temp/pytest-of-chdan/pytest-25/test_B2_a_key_is_kept_for_24_h0')
+
+    def test_B2_a_key_is_kept_for_24_hours(tmp_path):
+        client, network, clock, conn = make(tmp_path)
+        h = {**ACME, "Idempotency-Key": "nightly-42"}
+        first = client.post("/charges", headers=h, json=VISA).json()
+        clock.t += 10 * 60                                   # a retry job runs ten minutes later
+>       assert client.post("/charges", headers=h, json=VISA).json()["id"] == first["id"]
+E       AssertionError: assert 'ch_3bb0667cd77dc8b7' == 'ch_519176eabd83e407'
+E         
+E         - ch_519176eabd83e407
+E         + ch_3bb0667cd77dc8b7
+
+internal\verification\test_gates.py:106: AssertionError
+=========================== short test summary info ===========================
+FAILED internal\verification\test_gates.py::test_B2_a_key_is_kept_for_24_hours
+1 failed in 0.53s

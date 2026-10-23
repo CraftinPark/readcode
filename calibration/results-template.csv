@@ -1,0 +1,3 @@
+person,level,years,exercise,task,score,minutes,confidence,overconfident,first_hypothesis_min,first_right_file_min,bugs_found,false_positives,human_score_1to4,notes
+p01,new_grad,0.5,readcode-003,T1,,,,,,,,,,
+p01,new_grad,0.5,readcode-003,review,,,,,,,,,,

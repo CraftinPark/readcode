@@ -20,7 +20,7 @@
     {
       "id": "payments-core", "track": "payments-infra", "name": "Payments core",
       "description": "Charges, refunds, payment state and the public API around them.",
-      "skills": ["idempotency", "money-invariants", "state-machine", "tenant-isolation", "pagination", "input-validation"]
+      "skills": ["idempotency", "money-invariants", "state-machine", "tenant-isolation", "pagination", "input-validation", "retries-timeouts"]
     },
     {
       "id": "billing-revenue", "track": "payments-infra", "name": "Billing & revenue",

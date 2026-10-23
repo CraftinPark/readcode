@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "id": "readcode-003",
+  "version": 1,
+  "scoring": {
+    "total": 100,
+    "sections": {
+      "comprehension": 20,
+      "bugs": 40,
+      "design": 25,
+      "improvements": 15
+    }
+  },
+  "comprehension": [
+    {
+      "question_id": "C1",
+      "weight": 5,
+      "key_points": [
+        "claim() runs in its own transaction: deletes expired keys and inserts the key as in_progress, committed before the network call",
+        "the card network is called outside any transaction",
+        "store_charge inserts the charge, the charge.succeeded or charge.failed event and the saved response in one transaction",
+        "a declined card is stored too, with a 402 saved for replay; a timeout releases the key and returns 503"
+      ]
+    },
+    {
+      "question_id": "C2",
+      "weight": 5,
+      "key_points": [
+        "the event commits or rolls back together with the change it describes (outbox pattern)",
+        "an own transaction could commit an event for a change that later rolls back, or lose the event if the process dies after the change commits",
+        "delivery happens later in a worker, so a slow merchant endpoint never blocks the API request"
+      ]
+    },
+    {
+      "question_id": "C3",
+      "weight": 5,
+      "key_points": [
+        "the network deduplicates on reference: the same reference returns the original authorization instead of charging again",
+        "with an Idempotency-Key the reference should be derived from (account, key) so retries after a timeout or crash reuse it",
+        "without that, a retry after the card was charged but before the answer arrived charges the card twice"
+      ]
+    },
+    {
+      "question_id": "C4",
+      "weight": 5,
+      "key_points": [
+        "the Signature header is an HMAC-SHA256 of timestamp.body with the endpoint's shared secret",
+        "the receiver recomputes it with its copy of the secret and compares in constant time",
+        "the timestamp is signed, so the receiver can reject events older than a few minutes to stop replays"
+      ]
+    }
+  ],
+  "bugs": [
+    {
+      "id": "B1",
+      "title": "The card network reference ignores the idempotency key",
+      "severity": "critical",
+      "weight": 14,
+      "category": "idempotency",
+      "skills": [
+        "idempotency",
+        "retries-timeouts"
+      ],
+      "locations": [
+        {
+          "file": "payments/app.py",
+          "function": "create_charge",
+          "start_line": 75,
+          "end_line": 103
+        }
+      ],
+      "description": "create_charge always sends a fresh random reference to the card network. When the network charges the card but times out (or the server dies) before answering, the client's retry with the same Idempotency-Key gets a new reference, and the network authorizes the card a second time. Our database stores one charge; the customer's bank shows two. idempotency.network_reference exists for this and is never called.",
+      "mechanism_anchors": [
+        "reference must be derived from (account, idempotency key), e.g. idempotency.network_reference",
+        "the network deduplicates on reference, so a random one defeats it",
+        "timeout after the card was charged, then a retry",
+        "server dies mid-request and a retry takes the key over after CLAIM_TIMEOUT",
+        "our DB shows one charge but the bank shows two authorizations",
+        "network_reference is defined but unused"
+      ],
+      "fix": "reference = idempotency.network_reference(acct, idempotency_key) if idempotency_key else db.new_id(\"ref\")"
+    },
+    {
+      "id": "B2",
+      "title": "Idempotency keys expire after 86 seconds instead of 24 hours",
+      "severity": "high",
+      "weight": 10,
+      "category": "units",
+      "skills": [
+        "idempotency",
+        "retries-timeouts"
+      ],
+      "locations": [
+        {
+          "file": "payments/idempotency.py",
+          "function": "claim",
+          "start_line": 45,
+          "end_line": 50
+        }
+      ],
+      "description": "created_ms is in milliseconds but the cutoff subtracts KEY_TTL in seconds, so claim() deletes keys older than 86.4 seconds. A retry more than a minute and a half later is treated as a new request and creates a second charge (the network reference is the same, so the card is not charged twice, but the merchant sees and reports two charges).",
+      "mechanism_anchors": [
+        "unit mismatch: milliseconds column, seconds TTL",
+        "keys live 86.4 seconds instead of 24 hours",
+        "a retry after ~1.5 minutes creates a second charge record",
+        "DELETE in claim removes the key before the lookup"
+      ],
+      "fix": "cutoff = now_ms - int(KEY_TTL.total_seconds() * 1000)"
+    },
+    {
+      "id": "B3",
+      "title": "4xx responses from the merchant's endpoint count as delivered",
+      "severity": "high",
+      "weight": 8,
+      "category": "retries",
+      "skills": [
+        "retries-timeouts"
+      ],
+      "locations": [
+        {
+          "file": "payments/webhooks.py",
+          "function": "deliver_due",
+          "start_line": 62,
+          "end_line": 72
+        }
+      ],
+      "description": "deliver_due marks an event delivered for any status below 500, so a 400, 404 or 410 (a deploy, a maintenance page, a misrouted path) silently drops the event. Only 2xx means the merchant accepted it; everything else should be retried until MAX_AGE.",
+      "mechanism_anchors": [
+        "status < 500 should be 200 <= status < 300",
+        "4xx during a deploy or outage is temporary",
+        "event is marked delivered and never retried",
+        "contradicts the documented 3-day retry"
+      ],
+      "fix": "if status is not None and 200 <= status < 300:"
+    },
+    {
+      "id": "B4",
+      "title": "Webhook endpoints are cached by event type, not by account",
+      "severity": "critical",
+      "weight": 8,
+      "category": "authorization",
+      "skills": [
+        "tenant-isolation"
+      ],
+      "locations": [
+        {
+          "file": "payments/webhooks.py",
+          "function": "deliver_due",
+          "start_line": 49,
+          "end_line": 55
+        }
+      ],
+      "description": "The endpoint cache in deliver_due is keyed by the event type. The first account's endpoint is cached for, say, charge.succeeded, and every later charge.succeeded event in the batch (from any account) is sent to it: another merchant's customer data leaks, and the right merchant never gets the event.",
+      "mechanism_anchors": [
+        "cache_key is ev['type'] instead of ev['account_id']",
+        "events from different accounts in one batch share the cached endpoint",
+        "leaks other merchants' payloads (data exposure) and drops the right merchant's event",
+        "signed with the wrong merchant's secret"
+      ],
+      "fix": "cache_key = ev[\"account_id\"]"
+    }
+  ],
+  "design": [
+    {
+      "prompt_id": "D1",
+      "topic": "claim timeout",
+      "weight": 8,
+      "anchors": [
+        "too short: a slow but alive request is taken over and both servers act on the same key",
+        "the takeover is only safe because the network reference is derived from the key (dedup downstream)",
+        "too long: a retry after a crash is blocked with 409 for that long",
+        "set it above the card network timeout plus processing time; use a lease or heartbeat"
+      ]
+    },
+    {
+      "prompt_id": "D2",
+      "topic": "refund reservation recovery",
+      "weight": 9,
+      "anchors": [
+        "the reserved amount stays counted as refunded but no money moved and no refund row exists",
+        "the merchant cannot refund that amount again (stuck reservation)",
+        "record a pending refund row in the same transaction as the reservation",
+        "a sweeper resolves pending refunds by asking the network with the same refund reference"
+      ]
+    },
+    {
+      "prompt_id": "D3",
+      "topic": "moving to Postgres with several servers",
+      "weight": 8,
+      "anchors": [
+        "the conditional UPDATE reservation still works under READ COMMITTED (row lock on update)",
+        "idempotency claim needs INSERT ... ON CONFLICT on (account_id, key) instead of BEGIN IMMEDIATE",
+        "two webhook workers need SELECT ... FOR UPDATE SKIP LOCKED or a lease so an event is not sent twice",
+        "connection per request or a pool; the module-level connection is not shareable across threads"
+      ]
+    }
+  ],
+  "improvements": {
+    "weight": 15,
+    "expected_themes": [
+      {
+        "theme": "pass the refund through a pending state so a crash between reserve and network call can be recovered",
+        "weight": 4
+      },
+      {
+        "theme": "webhook delivery should claim events (lease or SKIP LOCKED) so two workers do not send the same event",
+        "weight": 3
+      },
+      {
+        "theme": "a shared module-level sqlite connection is used from several threads; use one connection per request",
+        "weight": 3
+      },
+      {
+        "theme": "receivers can get duplicates anyway; include the event id and document at-least-once delivery",
+        "weight": 3
+      },
+      {
+        "theme": "the endpoint cache should not outlive one batch; endpoint changes must take effect immediately",
+        "weight": 2
+      }
+    ]
+  },
+  "red_herrings": [
+    {
+      "description": "The refund amount is reserved before the card network is called and given back on a timeout. This is intended: it stops two concurrent refunds from both passing the check.",
+      "locations": [
+        {
+          "file": "payments/app.py",
+          "function": "create_refund",
+          "start_line": 131,
+          "end_line": 145
+        }
+      ]
+    },
+    {
+      "description": "After CLAIM_TIMEOUT a retry takes over an in_progress key. Intended: otherwise a crash would block the key for 24 hours. It is safe because the network reference is derived from the key.",
+      "locations": [
+        {
+          "file": "payments/idempotency.py",
+          "function": "claim",
+          "start_line": 61,
+          "end_line": 66
+        }
+      ]
+    },
+    {
+      "description": "Events for accounts with no endpoint are marked delivered. Intended: there is nowhere to send them, and they stay in the table for the dashboard."
+    }
+  ],
+  "grader_instructions": [
+    "B1 needs the mechanism (random reference defeats the network's deduplication) and the trigger (retry after a timeout or crash). Saying only 'idempotency is broken' is partial.",
+    "B2 full credit needs the unit mismatch; noticing only that duplicates appear after some minutes is partial.",
+    "Tasks are a separate mode: incident tickets point at bugs, so never show them alongside the open bug hunt."
+  ],
+  "tasks": [
+    {
+      "task_id": "T1",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B1"
+      ]
+    },
+    {
+      "task_id": "T2",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B2"
+      ]
+    },
+    {
+      "task_id": "T3",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B3"
+      ]
+    },
+    {
+      "task_id": "T4",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B4"
+      ]
+    },
+    {
+      "task_id": "T5",
+      "type": "review_pr",
+      "verdict": "request_changes",
+      "has_defect": true,
+      "anchors": [
+        "3xx responses would still count as delivered; the HTTP client does not follow redirects for POST",
+        "only 2xx means the merchant accepted the event",
+        "correct condition is 200 <= status < 300"
+      ]
+    },
+    {
+      "task_id": "T6",
+      "type": "review_pr",
+      "verdict": "approve",
+      "has_defect": false,
+      "anchors": [
+        "refunds are looked up by charge_id, so an index on charge_id matches the query",
+        "IF NOT EXISTS makes it safe to run against existing databases on startup",
+        "suggest: check the dashboard query plan uses it"
+      ]
+    },
+    {
+      "task_id": "T7",
+      "type": "trace",
+      "correct_option": "b",
+      "distractors": {
+        "a": "assumes the saved response is already there; the first request has not finished, so the key is in_progress",
+        "c": "assumes the key is not shared between servers; it is stored in the shared database",
+        "d": "confuses the second request with the first one's possible timeout"
+      }
+    }
+  ]
+}

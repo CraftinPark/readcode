@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "id": "readcode-003",
+  "source": {
+    "kind": "generated",
+    "license_spdx": "LicenseRef-ReadCode-Original",
+    "original_sha256": "90f926cbe2cbbb3bfda9491aa33883ec94014d18162fa6b2128c2b1c29e66ca4"
+  },
+  "baseline": {
+    "path": "internal/baseline",
+    "sha256": "90f926cbe2cbbb3bfda9491aa33883ec94014d18162fa6b2128c2b1c29e66ca4",
+    "gate_a": {
+      "passed": true,
+      "tests_run": 8,
+      "tools": [
+        "test-driver"
+      ],
+      "evidence_file": "internal/evidence/gate_a.txt"
+    },
+    "changes_summary": "Hand-written clean reference (folder). The shipped code is this folder with the four mutations in internal/verification/run_gates.py applied."
+  },
+  "shipped": [
+    {
+      "path": "README.md",
+      "sha256": "96711b9c285d06899469f44853f6be3cebecd1ca7d984a5a03012cdd8e23a9c7"
+    },
+    {
+      "path": "payments/__init__.py",
+      "sha256": "4795a8b7ada03b02423c6c02fcde959ef35e36b4855870ceecaab3624bf460a8"
+    },
+    {
+      "path": "payments/app.py",
+      "sha256": "4a69de9723593cb95aab4950e87e0484aa6dfd4b0d27eec6646a63b31eedaeb6"
+    },
+    {
+      "path": "payments/card_network.py",
+      "sha256": "1d71a1a86f337f90185877fd083fd61ae76404766d6af2cd4346d1ee01588744"
+    },
+    {
+      "path": "payments/db.py",
+      "sha256": "5456e63b454e7e181c296e91c231bc8fbd883504861d2d6a378ae1d4b64b15f8"
+    },
+    {
+      "path": "payments/idempotency.py",
+      "sha256": "0c925107428d8b3e31d00d69cd0dcd1274b27f0d37b22fad2a446b50ae571443"
+    },
+    {
+      "path": "payments/webhooks.py",
+      "sha256": "b39224496131b033230bab6203c40d8dbb91f7ad848bf67daec7aef10f065d3d"
+    },
+    {
+      "path": "pytest.ini",
+      "sha256": "b160d82f7811555051f8966d8e02750a985227c1d022208c784e606946f2eada"
+    },
+    {
+      "path": "tests/test_smoke.py",
+      "sha256": "fda2d68b5a50c68c382daa392c625574a76ade03e14ba22de9b052eb40d25575"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "B1",
+      "file": "payments/app.py",
+      "line": 91,
+      "change": {
+        "old": "        reference = idempotency.network_reference(acct, idempotency_key) if idempotency_key else db.new_id(\"ref\")\n",
+        "new": "        reference = db.new_id(\"ref\")\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "test-driver",
+        "evidence_file": "internal/evidence/B1.txt"
+      }
+    },
+    {
+      "id": "B2",
+      "file": "payments/idempotency.py",
+      "line": 48,
+      "change": {
+        "old": "    cutoff = now_ms - int(KEY_TTL.total_seconds() * 1000)\n",
+        "new": "    cutoff = now_ms - int(KEY_TTL.total_seconds())\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "test-driver",
+        "evidence_file": "internal/evidence/B2.txt"
+      }
+    },
+    {
+      "id": "B3",
+      "file": "payments/webhooks.py",
+      "line": 64,
+      "change": {
+        "old": "        if status is not None and 200 <= status < 300:\n",
+        "new": "        if status is not None and status < 500:\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "test-driver",
+        "evidence_file": "internal/evidence/B3.txt"
+      }
+    },
+    {
+      "id": "B4",
+      "file": "payments/webhooks.py",
+      "line": 50,
+      "change": {
+        "old": "        cache_key = ev[\"account_id\"]\n",
+        "new": "        cache_key = ev[\"type\"]\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "test-driver",
+        "evidence_file": "internal/evidence/B4.txt"
+      }
+    }
+  ],
+  "review": {
+    "status": "pending",
+    "notes": "Written 2026-10-22 on danny-v0. Rung 4. B1 and B3 are proven by fault injection. Needs a human read-through, a pilot solve and calibration (docs/calibration.md)."
+  }
+}

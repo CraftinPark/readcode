@@ -37,6 +37,20 @@ def sha256(path):
         return hashlib.sha256(f.read()).hexdigest()
 
 
+def tree_files(root):
+    out = []
+    for d, dirs, names in os.walk(root):
+        dirs[:] = sorted(x for x in dirs if x != "__pycache__")
+        out += [os.path.relpath(os.path.join(d, n), root).replace(os.sep, "/") for n in sorted(names)]
+    return sorted(out)
+
+
+def tree_sha256(root):
+    """Hash of a folder (multi-file baselines): sha256 over 'path<TAB>sha256' lines, sorted by path."""
+    lines = "".join(f"{p}\t{sha256(os.path.join(root, p))}\n" for p in tree_files(root))
+    return hashlib.sha256(lines.encode()).hexdigest()
+
+
 def walk_keys(obj):
     if isinstance(obj, dict):
         for k, v in obj.items():
@@ -209,7 +223,8 @@ def check_consistency(rep, ex, pub, key, man):
             if HINT_WORDS.search(ln):
                 rep.warn("code", f"{f['path']}:{i} contains a word that may hint at a bug: {ln.strip()[:60]!r}")
     declared = {f["path"] for f in pub["files"]}
-    for root, _, names in os.walk(code_dir):
+    for root, dirs, names in os.walk(code_dir):
+        dirs[:] = [d for d in dirs if d != "__pycache__"]
         for n in names:
             rel = os.path.relpath(os.path.join(root, n), code_dir).replace(os.sep, "/")
             if rel not in declared:
@@ -267,14 +282,23 @@ def check_consistency(rep, ex, pub, key, man):
             check_range(f"key.red_herrings[{i}]", r)
 
     # ---- manifest <-> code <-> key
-    baseline_text = None
+    # baseline_of(file) -> the clean text of that shipped file, or None if unknown.
+    # A single-file baseline is the clean copy of every bug's file; a folder baseline mirrors code/.
+    baseline_of = lambda f: None
     bpath = man["baseline"].get("path")
     if bpath:
         full = os.path.join(ex, bpath)
-        if not os.path.isfile(full):
+        if os.path.isdir(full):
+            if tree_sha256(full) != man["baseline"]["sha256"]:
+                rep.err("manifest.baseline", "sha256 does not match the baseline folder")
+            def baseline_of(f, full=full):
+                p = os.path.join(full, f)
+                return open(p, encoding="utf-8", errors="replace").read() if os.path.isfile(p) else ""
+        elif not os.path.isfile(full):
             rep.err("manifest.baseline", f"{bpath} does not exist")
         else:
-            baseline_text = open(full, encoding="utf-8", errors="replace").read()
+            text = open(full, encoding="utf-8", errors="replace").read()
+            baseline_of = lambda f: text
             if sha256(full) != man["baseline"]["sha256"]:
                 rep.err("manifest.baseline", "sha256 does not match the baseline file")
     else:
@@ -299,7 +323,8 @@ def check_consistency(rep, ex, pub, key, man):
             got = lines[b["line"] - 1: b["line"] - 1 + len(new_lines)]
             if got != new_lines:
                 rep.err(where, f"the shipped code at line {b['line']} does not match the recorded change")
-        if baseline_text is not None and b["change"]["old"] not in baseline_text:
+        clean = baseline_of(b["file"])
+        if clean is not None and b["change"]["old"] not in clean:
             rep.err(where, "the recorded clean text is not in the baseline file")
         if b["id"] in key_bug and not in_ranges(b["line"], key_bug[b["id"]]["locations"]):
             rep.err(where, f"line {b['line']} is not inside any location the key gives for this bug")

@@ -200,3 +200,19 @@ def test_trace_answer_in_public_is_rejected(ex, validators):
     pub["tasks"][0]["correct_option"] = "b"
     save(ex, "public", pub)
     assert "correct_option" in errors(ex, validators)
+
+
+# ---- multi-file examples (folder baseline) ----------------------------------
+
+def test_edited_folder_baseline_is_rejected(tmp_path, validators):
+    ex3 = tmp_path / "readcode-003"
+    shutil.copytree(ROOT / "examples" / "readcode-003", ex3)
+    f = ex3 / "internal" / "baseline" / "payments" / "db.py"
+    f.write_text(f.read_text(encoding="utf-8") + "\n# edited\n", encoding="utf-8")
+    assert "sha256 does not match the baseline folder" in errors(ex3, validators)
+
+
+def test_clean_multi_file_example_passes(tmp_path, validators):
+    ex3 = tmp_path / "readcode-003"
+    shutil.copytree(ROOT / "examples" / "readcode-003", ex3)
+    assert errors(ex3, validators) == ""

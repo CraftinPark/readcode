@@ -118,6 +118,12 @@ export function highlightPython(source: string): Token[][] {
   return lines
 }
 
+function highlightPlain(source: string): Token[][] {
+  return source.replace(/\r\n/g, '\n').split('\n').map((l) => (l ? [{ kind: 'plain' as TokenKind, text: l }] : []))
+}
+
 export function highlightFor(language: string, source: string): Token[][] {
-  return language === 'python' ? highlightPython(source) : highlightC(source)
+  if (language === 'python') return highlightPython(source)
+  if (language === 'c') return highlightC(source)
+  return highlightPlain(source)
 }

@@ -1,0 +1,31 @@
+== t0 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.46s
+
+== B1 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.47s
+
+== B2 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.43s
+
+== B3 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.45s
+
+== B4 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.48s
+
+== t0 on shipped: PASS
+.                                                                        [100%]
+1 passed in 0.48s
+
+== smoke tests on baseline: PASS
+....                                                                     [100%]
+4 passed in 0.55s
+
+== smoke tests on shipped (the candidate's tests must pass): PASS
+....                                                                     [100%]
+4 passed in 0.54s

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "exercise_id": "readcode-003",
+  "exercise_version": 1,
+  "candidate_id": "calibration-weak",
+  "submitted_at": "2026-10-22T12:00:00Z",
+  "time_spent_minutes": 25,
+  "comprehension": {
+    "C1": "It creates a charge.",
+    "C4": "There is a signature."
+  },
+  "bugs": [
+    {
+      "id": "c1",
+      "locations": [
+        {
+          "file": "payments/idempotency.py",
+          "start_line": 61,
+          "end_line": 66
+        }
+      ],
+      "function": "claim",
+      "severity": "critical",
+      "confidence": "certain",
+      "explanation": "A retry can take over a request that is still running after 60 seconds, which is a race condition."
+    },
+    {
+      "id": "c2",
+      "locations": [
+        {
+          "file": "payments/webhooks.py",
+          "start_line": 64,
+          "end_line": 64
+        }
+      ],
+      "function": "deliver_due",
+      "severity": "low",
+      "confidence": "guess",
+      "explanation": "The status check looks strange."
+    }
+  ],
+  "design": {},
+  "improvements": [],
+  "notes": []
+}

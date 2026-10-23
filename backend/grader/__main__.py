@@ -1,12 +1,14 @@
-"""Grade a submission from the command line.
+"""Grade a submission (full review or one task) from the command line.
 
     cd backend && python -m grader ../examples/readcode-001 path/to/submission.json
+    cd backend && python -m grader ../examples/readcode-003 path/to/task-submission.json
 """
 import argparse
 import json
 import sys
 
 from . import FakeJudge, JudgeError, SubmissionError, grade
+from .task import TaskError, grade_task, is_task_submission
 
 JUDGES = {"fake": FakeJudge}
 
@@ -20,6 +22,21 @@ def main():
     a = ap.parse_args()
     with open(a.submission, encoding="utf-8") as f:
         sub = json.load(f)
+    if is_task_submission(sub):
+        try:
+            r = grade_task(a.example, sub, JUDGES[a.judge]())
+        except TaskError as e:
+            sys.exit(f"cannot grade: {e}")
+        if a.json:
+            print(json.dumps(r, indent=2))
+            return
+        print(f"{r['exercise_id']} {r['task_id']} ({r['task_type']})  candidate={r['candidate_id']}  judge={r['judge']}")
+        print(f"SCORE {r['score']} / {r['max']}   " + "  ".join(f"{k} {v}" for k, v in r["parts"].items()))
+        if r["overconfident"]:
+            print("overconfident: marked sure, scored under 40")
+        if r["feedback"]:
+            print("feedback: " + r["feedback"])
+        return
     try:
         r = grade(a.example, sub, JUDGES[a.judge]())
     except (SubmissionError, JudgeError) as e:

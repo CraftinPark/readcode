@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "exercise_id": "readcode-003",
+  "exercise_version": 1,
+  "candidate_id": "calibration-mid",
+  "submitted_at": "2026-10-22T12:00:00Z",
+  "time_spent_minutes": 50,
+  "comprehension": {
+    "C1": "It checks the currency, then claims the idempotency key, calls the card network and stores the charge with the saved response.",
+    "C2": "So the event and the charge are saved together in one transaction.",
+    "C3": "The reference identifies the authorization at the network.",
+    "C4": "The webhook has a signature header made with HMAC and a secret."
+  },
+  "bugs": [
+    {
+      "id": "c1",
+      "locations": [
+        {
+          "file": "payments/idempotency.py",
+          "start_line": 48,
+          "end_line": 48
+        }
+      ],
+      "function": "claim",
+      "severity": "high",
+      "confidence": "fairly_sure",
+      "explanation": "Keys seem to expire much too early because the cutoff math looks off, so a later retry would create a second charge."
+    },
+    {
+      "id": "c2",
+      "locations": [
+        {
+          "file": "payments/webhooks.py",
+          "start_line": 64,
+          "end_line": 64
+        }
+      ],
+      "function": "deliver_due",
+      "severity": "medium",
+      "confidence": "certain",
+      "explanation": "Any status below 500 counts as delivered, so a 404 from the merchant is never retried.",
+      "fix": "only treat 2xx as delivered"
+    },
+    {
+      "id": "c3",
+      "locations": [
+        {
+          "file": "payments/app.py",
+          "start_line": 133,
+          "end_line": 138
+        }
+      ],
+      "function": "create_refund",
+      "severity": "high",
+      "confidence": "certain",
+      "explanation": "The refund amount is reserved before the card network is called. If the network fails the merchant loses the money."
+    }
+  ],
+  "design": {
+    "D1": "If the timeout is too short two servers could process the same request. Too long and retries are blocked.",
+    "D3": "Postgres would need a connection pool and the webhook worker would need locking."
+  },
+  "improvements": [
+    {
+      "title": "Better logging",
+      "detail": "Log webhook failures."
+    }
+  ],
+  "notes": []
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "exercise_id": "readcode-003",
+  "exercise_version": 1,
+  "task_id": "T1",
+  "task_type": "incident",
+  "candidate_id": "calibration-strong",
+  "submitted_at": "2026-10-22T12:00:00Z",
+  "time_spent_minutes": 9,
+  "locations": [
+    {
+      "file": "payments/app.py",
+      "start_line": 91,
+      "end_line": 91
+    }
+  ],
+  "explanation": "The reference sent to the card network is random, so the network's deduplication on reference is defeated. The network charged the card, timed out, the key was released, and the retry used a new reference: a second authorization. Our DB shows one charge, the bank two. network_reference is defined but unused.",
+  "confidence": "certain",
+  "fix": "reference = idempotency.network_reference(acct, idempotency_key) if idempotency_key else db.new_id(\"ref\")"
+}

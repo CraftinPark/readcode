@@ -1,0 +1,28 @@
+== B3 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.44s
+
+== B3 on shipped: FAIL
+F                                                                        [100%]
+================================== FAILURES ===================================
+_________________ test_B3_a_4xx_from_the_endpoint_is_retried __________________
+
+tmp_path = WindowsPath('C:/Users/chdan/AppData/Local/Temp/pytest-of-chdan/pytest-27/test_B3_a_4xx_from_the_endpoin0')
+
+    def test_B3_a_4xx_from_the_endpoint_is_retried(tmp_path):
+        client, network, clock, conn = make(tmp_path)
+        client.post("/charges", headers=ACME, json=VISA)
+        replies = iter([400, 200])
+        sent = []
+        post = lambda u, b, h: sent.append(u) or next(replies)  # noqa: E731
+>       assert webhooks.deliver_due(conn, post, db.now_ms(clock)) == 0
+E       assert 1 == 0
+E        +  where 1 = <function deliver_due at 0x000001A27F943D70>(<sqlite3.Connection object at 0x000001A27F916B60>, <function test_B3_a_4xx_from_the_endpoint_is_retried.<locals>.<lambda> at 0x000001A27FB02F00>, 1760000000000)
+E        +    where <function deliver_due at 0x000001A27F943D70> = webhooks.deliver_due
+E        +    and   1760000000000 = <function now_ms at 0x000001A27F942C40>(<test_gates.Clock object at 0x000001A27F86EA50>)
+E        +      where <function now_ms at 0x000001A27F942C40> = db.now_ms
+
+internal\verification\test_gates.py:116: AssertionError
+=========================== short test summary info ===========================
+FAILED internal\verification\test_gates.py::test_B3_a_4xx_from_the_endpoint_is_retried
+1 failed in 0.52s

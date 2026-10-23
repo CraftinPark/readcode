@@ -27,7 +27,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["sha256", "changes_summary", "gate_a"],
       "properties": {
-        "path": {"type": "string", "description": "Relative to the example root, e.g. internal/baseline/lru_cache.c"},
+        "path": {"type": "string", "description": "Relative to the example root: a file (internal/baseline/lru_cache.c) or, for multi-file examples, a folder mirroring code/"},
         "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "changes_summary": {"type": "string"},
         "gate_a": {

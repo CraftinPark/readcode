@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "id": "readcode-003",
+  "version": 1,
+  "title": "Payments service: charges, refunds and webhooks",
+  "language": "python",
+  "difficulty": "hard",
+  "track": "payments-infra",
+  "area": "payments-core",
+  "rung": 4,
+  "topics": [
+    "api",
+    "payments",
+    "multi-tenant"
+  ],
+  "estimated_minutes": 50,
+  "files": [
+    {
+      "path": "README.md",
+      "line_count": 35
+    },
+    {
+      "path": "payments/app.py",
+      "line_count": 156
+    },
+    {
+      "path": "payments/idempotency.py",
+      "line_count": 79
+    },
+    {
+      "path": "payments/card_network.py",
+      "line_count": 64
+    },
+    {
+      "path": "payments/webhooks.py",
+      "line_count": 72
+    },
+    {
+      "path": "payments/db.py",
+      "line_count": 113
+    },
+    {
+      "path": "payments/__init__.py",
+      "line_count": 1
+    },
+    {
+      "path": "tests/test_smoke.py",
+      "line_count": 57
+    },
+    {
+      "path": "pytest.ini",
+      "line_count": 3
+    }
+  ],
+  "license": {
+    "spdx": "LicenseRef-ReadCode-Original",
+    "attribution": "Written for ReadCode. Not affiliated with any payments company."
+  },
+  "questions": [
+    {
+      "id": "C1",
+      "text": "Follow a POST /charges with a new Idempotency-Key from the first line of create_charge to the response. Which database transactions happen, and what is committed in each?"
+    },
+    {
+      "id": "C2",
+      "text": "Why does webhooks.record take the caller's connection and never commit on its own? What would go wrong if it opened its own transaction?"
+    },
+    {
+      "id": "C3",
+      "text": "What does the card network do with the reference it is given, and why does this service depend on that behaviour?"
+    },
+    {
+      "id": "C4",
+      "text": "How can a merchant's webhook endpoint check that an event really came from this service, and what stops someone from replaying an old event?"
+    }
+  ],
+  "design_prompts": [
+    {
+      "id": "D1",
+      "text": "A request holds its idempotency key in_progress while it talks to the card network, and after 60 seconds a retry may take the key over. What are the risks of making that timeout shorter or longer, and how would you choose it?"
+    },
+    {
+      "id": "D2",
+      "text": "create_refund reserves the amount before calling the card network and gives it back on a timeout. What happens if the process dies between the reservation and the network call, and how would you make that recoverable?"
+    },
+    {
+      "id": "D3",
+      "text": "This runs on SQLite with BEGIN IMMEDIATE. What would you need to change to run it on Postgres with several app servers and two webhook workers?"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "type": "incident",
+      "text": "Support ticket #5120 (Acme): \"A customer was charged twice for order 88231. Our checkout timed out on POST /charges and retried with the same Idempotency-Key. Your dashboard shows one charge, but the customer's bank statement shows two authorizations of $25.00.\" Find the cause in the code and explain it."
+    },
+    {
+      "id": "T2",
+      "type": "incident",
+      "text": "Support ticket #5134 (Acme): \"Our reconciliation job re-sends POST /charges, with the original Idempotency-Key, for any order whose response we never received. It runs every 10 minutes. Some orders now have two charges in your dashboard.\" Find the cause in the code and explain it."
+    },
+    {
+      "id": "T3",
+      "type": "incident",
+      "text": "Support ticket #5141 (Acme): \"During our deploy last night our webhook endpoint answered 404 for about five minutes. The charge.refunded events from that window never arrived, not even later. Your docs say failed deliveries are retried for 3 days.\" Find the cause in the code and explain it."
+    },
+    {
+      "id": "T4",
+      "type": "incident",
+      "text": "Security report from Globex: \"Our webhook endpoint received charge.succeeded events for charges that are not ours. The payloads look like another merchant's customers.\" Find the cause in the code and explain it."
+    },
+    {
+      "id": "T5",
+      "type": "review_pr",
+      "text": "A teammate opened this PR to fix ticket #5141. Approve it, or request changes and say why.",
+      "diff": "--- a/payments/webhooks.py\n+++ b/payments/webhooks.py\n@@ deliver_due\n         status = http_post(endpoint[\"url\"], body, headers)\n \n-        if status is not None and status < 500:\n+        if status is not None and status < 400:\n             conn.execute(\"UPDATE events SET delivered_ms = ?, attempts = attempts + 1 WHERE id = ?\", (now_ms, ev[\"id\"]))\n"
+    },
+    {
+      "id": "T6",
+      "type": "review_pr",
+      "text": "Refunds are slow to load on the dashboard for merchants with many charges. A teammate opened this PR. Approve it, or request changes and say why.",
+      "diff": "--- a/payments/db.py\n+++ b/payments/db.py\n@@ SCHEMA\n     network_id  TEXT NOT NULL,\n     created_ms  INTEGER NOT NULL\n );\n+CREATE INDEX IF NOT EXISTS refunds_by_charge ON refunds (charge_id);\n \n CREATE TABLE IF NOT EXISTS idempotency_keys (\n"
+    },
+    {
+      "id": "T7",
+      "type": "trace",
+      "text": "Acme's checkout sends POST /charges with Idempotency-Key: k9. While the card network is still thinking about it (5 seconds in), a second copy of the same request with the same key and body arrives at another server. What does the second request get?",
+      "options": [
+        {
+          "id": "a",
+          "text": "200 with the same charge as the first request"
+        },
+        {
+          "id": "b",
+          "text": "409 request_in_progress"
+        },
+        {
+          "id": "c",
+          "text": "200 with a second, new charge"
+        },
+        {
+          "id": "d",
+          "text": "503 card_network_timeout"
+        }
+      ]
+    }
+  ]
+}

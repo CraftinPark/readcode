@@ -5,6 +5,7 @@ export interface OutlineFunction {
   name: string
   line: number
   end: number
+  file?: string            // set when functions from several files are listed together
 }
 
 export interface OutlineSection {
@@ -99,7 +100,9 @@ export function parsePythonOutline(lines: string[]): OutlineSection[] {
 }
 
 export function outlineFor(language: string, lines: string[]): OutlineSection[] {
-  return language === 'python' ? parsePythonOutline(lines) : parseOutline(lines)
+  if (language === 'python') return parsePythonOutline(lines)
+  if (language === 'c') return parseOutline(lines)
+  return []
 }
 
 export function allFunctions(sections: OutlineSection[]): OutlineFunction[] {

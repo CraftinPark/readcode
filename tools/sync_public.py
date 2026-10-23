@@ -21,11 +21,13 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[1]
-SUMMARY_FIELDS = ("id", "version", "title", "language", "difficulty", "topics", "estimated_minutes")
+SUMMARY_FIELDS = ("id", "version", "title", "language", "difficulty", "track", "area", "rung", "topics", "estimated_minutes")
 
 
 def sync(examples, out):
     validator = Draft202012Validator(json.loads((ROOT / "schemas" / "public.schema.json").read_text()))
+    tax = json.loads((ROOT / "taxonomy" / "taxonomy.json").read_text(encoding="utf-8"))
+    taxonomy = {k: {x["id"]: x for x in tax[k]} for k in ("tracks", "areas")}  # names for the exercise list
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
@@ -45,7 +47,11 @@ def sync(examples, out):
             target = dst / "code" / f["path"]
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src, target)
-        index.append({k: pub[k] for k in SUMMARY_FIELDS} | {"line_count": sum(f["line_count"] for f in pub["files"])})
+        track, area = taxonomy["tracks"].get(pub["track"], {}), taxonomy["areas"].get(pub["area"], {})
+        index.append({k: pub[k] for k in SUMMARY_FIELDS} | {
+            "line_count": sum(f["line_count"] for f in pub["files"]),
+            "track_name": track.get("name", pub["track"]), "area_name": area.get("name", pub["area"]),
+            "in_mvp": track.get("in_mvp", True), "tasks": pub.get("tasks", [])})
     (out / "index.json").write_text(json.dumps(index, indent=2))
     return index
 

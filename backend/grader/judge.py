@@ -174,3 +174,12 @@ class FakeJudge:
             "coaching_tip": "Before writing a finding, trace one concrete call path through the function and "
                             "name the exact line where state goes wrong.",
         }
+
+    def judge_task(self, request):
+        """Score a task answer's explanation and fix, 0..1 each (see grader/task.py)."""
+        mech = max((_covers(request["explanation"], a) for a in request["anchors"]), default=0.0)
+        both = _coverage(request["explanation"], request["anchors"], hit=0.5)
+        fix = _covers(request["fix"], request["fix_key"]) if request["fix"] and request["fix_key"] else 0.0
+        # The best single anchor matters most; covering several anchors adds the rest.
+        return {"explanation": round(min(1.0, 0.7 * min(1.0, mech * 1.5) + 0.3 * both * 2), 2),
+                "fix": round(min(1.0, fix * 2), 2)}

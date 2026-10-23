@@ -34,6 +34,24 @@ def all_candidates(comments, key_bugs):
     return {c["id"]: candidates(c, key_bugs) for c in comments}
 
 
+def red_herrings_by_location(comments, red_herrings, cands):
+    """{comment_id: red_herring_index} for comments that point at a listed red herring.
+
+    A comment counts when one of its locations overlaps a red herring's range
+    (no tolerance) and it is not at a real bug's lines (no full-locate candidate).
+    This catches claims the judge misses because they are worded differently.
+    """
+    out = {}
+    for c in comments:
+        if any(locate >= 1.0 for _, locate in cands.get(c["id"], [])):
+            continue
+        for i, h in enumerate(red_herrings):
+            if any(_near(cl, hl, tol=0) for cl in c["locations"] for hl in h.get("locations", [])):
+                out[c["id"]] = i
+                break
+    return out
+
+
 def assign(cands, judged, red_herring_claims=()):
     """Pick at most one key bug per comment and at most one comment per key bug.
 
