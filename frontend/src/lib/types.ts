@@ -1,5 +1,14 @@
 // Shapes of public.json (schemas/public.schema.json) and of the candidate's in-progress work.
 
+const LANGUAGE_LABELS: Record<string, string> = {
+  c: 'C', cpp: 'C++', python: 'Python', go: 'Go', rust: 'Rust', java: 'Java',
+  javascript: 'JavaScript', typescript: 'TypeScript',
+}
+
+export function languageLabel(language: string): string {
+  return LANGUAGE_LABELS[language] ?? language
+}
+
 export interface ExerciseSummary {
   id: string
   version: number

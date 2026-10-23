@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Logo } from '../components/Logo'
-import type { PublicExercise } from '../lib/types'
+import { languageLabel, type PublicExercise } from '../lib/types'
 
 /** Soft countdown from the exercise's estimate. Turns red when over; never forces a submit. */
 function Timer({ startedAt, minutes }: { startedAt: number; minutes: number }) {
@@ -38,7 +38,7 @@ export function Header({ ex, lines, answeredCount, totalPrompts, commentCount, s
       <div className="flex min-w-0 flex-col leading-tight">
         <span className="truncate text-sm font-semibold">{ex.title}</span>
         <span className="text-xs text-muted">
-          Exercise {number} · {ex.language === 'c' ? 'C' : ex.language} · {lines} lines · <span className="capitalize">{ex.difficulty}</span>
+          Exercise {number} · {languageLabel(ex.language)} · {lines} lines · <span className="capitalize">{ex.difficulty}</span>
         </span>
       </div>
       <div className="flex-1" />

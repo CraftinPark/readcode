@@ -9,8 +9,8 @@ import { Header } from '../exercise/Header'
 import { SidePanel } from '../exercise/SidePanel'
 import type { Tab } from '../exercise/SidePanel'
 import { Sidebar } from '../exercise/Sidebar'
-import { highlightC } from '../lib/highlight'
-import { allFunctions, functionAt, parseOutline } from '../lib/outline'
+import { highlightFor } from '../lib/highlight'
+import { allFunctions, functionAt, outlineFor } from '../lib/outline'
 import { clearAnswers, emptyAnswers, loadAnswers, saveAnswers } from '../lib/storage'
 import { buildSubmission } from '../lib/submission'
 import type { Submission } from '../lib/submission'
@@ -49,8 +49,8 @@ export default function ExercisePage({ id }: { id: string }) {
 function Workspace({ ex, source }: { ex: PublicExercise; source: string }) {
   const path = ex.files[0].path
   const lines = useMemo(() => source.replace(/\n$/, '').split('\n'), [source])
-  const tokens = useMemo(() => highlightC(source.replace(/\n$/, '')), [source])
-  const sections = useMemo(() => parseOutline(lines), [lines])
+  const tokens = useMemo(() => highlightFor(ex.language, source.replace(/\n$/, '')), [ex.language, source])
+  const sections = useMemo(() => outlineFor(ex.language, lines), [ex.language, lines])
   const functions = useMemo(() => allFunctions(sections), [sections])
 
   const [answers, setAnswers] = useState<Answers>(() => loadAnswers(ex.id, ex.version) ?? emptyAnswers())

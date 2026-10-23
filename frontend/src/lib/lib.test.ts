@@ -3,8 +3,8 @@ import { resolve } from 'node:path'
 import Ajv2020 from 'ajv/dist/2020'
 import addFormats from 'ajv-formats'
 import { describe, expect, it } from 'vitest'
-import { highlightC } from './highlight'
-import { allFunctions, functionAt, parseOutline } from './outline'
+import { highlightC, highlightFor } from './highlight'
+import { allFunctions, functionAt, outlineFor, parseOutline, parsePythonOutline } from './outline'
 import { buildSubmission } from './submission'
 import type { Answers, PublicExercise } from './types'
 
@@ -46,6 +46,48 @@ describe('highlight', () => {
     const kinds = (n: number) => Object.fromEntries(tokens[n - 1].map((t) => [t.text, t.kind]))
     expect(kinds(185)).toMatchObject({ static: 'kw', void: 'kw' })
     expect(kinds(29)['/* Types                                                              */']).toBe('com')
+  })
+})
+
+describe('python outline and highlight', () => {
+  const py = readFileSync(resolve(ROOT, 'examples/readcode-002/code/payments_api.py'), 'utf8')
+  const pyLines = py.replace(/\n$/, '').split('\n')
+  const sections = parsePythonOutline(pyLines)
+  const fns = Object.fromEntries(allFunctions(sections).map((f) => [f.name, f]))
+
+  it('finds the banner sections', () => {
+    expect(sections.map((s) => s.title)).toEqual(['Storage', 'Request and response shapes', 'App'])
+  })
+
+  it('lists classes, functions and the handlers inside create_app, but not methods', () => {
+    expect(Object.keys(fns)).toEqual(expect.arrayContaining(
+      ['Account', 'Charge', 'Store', 'charge_json', 'create_app', 'load_charge', 'create_charge', 'list_charges', 'create_refund']))
+    expect(fns).not.toHaveProperty('next_seq')
+    expect(fns).not.toHaveProperty('refunded')
+  })
+
+  it('starts a handler at its decorator and maps lines inside it', () => {
+    expect(pyLines[fns.create_refund.line - 1].trim()).toBe('@app.post("/charges/{charge_id}/refunds")')
+    expect(functionAt(sections, fns.create_refund.line + 8)?.name).toBe('create_refund')
+    expect(functionAt(sections, fns.load_charge.line + 2)?.name).toBe('load_charge')
+  })
+
+  it('picks the parser by language', () => {
+    expect(outlineFor('python', pyLines).map((s) => s.title)).toContain('App')
+    expect(outlineFor('c', lines).map((s) => s.title)).toContain('Public API')
+  })
+
+  it('keeps every character and colours python tokens', () => {
+    const tokens = highlightFor('python', py.replace(/\n$/, ''))
+    expect(tokens.length).toBe(pyLines.length)
+    tokens.forEach((t, i) => expect(t.map((x) => x.text).join('')).toBe(pyLines[i]))
+    const n = pyLines.findIndex((l) => l.includes('def load_charge'))
+    expect(Object.fromEntries(tokens[n].map((t) => [t.text, t.kind]))).toMatchObject({ def: 'kw' })
+    const docEnd = pyLines.indexOf('"""')
+    for (let i = 0; i <= docEnd; i++) {                    // the whole module docstring is one string
+      tokens[i].forEach((t) => expect(t.kind).toBe('str'))
+    }
+    expect(tokens[n - 1].some((t) => t.kind === 'pre') || pyLines[n - 1].trim() === '').toBe(true)
   })
 })
 

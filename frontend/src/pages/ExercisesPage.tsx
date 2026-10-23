@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Logo } from '../components/Logo'
 import { hasProgress } from '../lib/storage'
-import type { ExerciseSummary } from '../lib/types'
+import { languageLabel, type ExerciseSummary } from '../lib/types'
 
 export default function ExercisesPage() {
   const [list, setList] = useState<ExerciseSummary[] | null>(null)
@@ -31,7 +31,7 @@ export default function ExercisesPage() {
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-semibold">{e.title}</div>
                   <div className="mt-0.5 text-xs text-muted">
-                    Exercise {e.id.replace(/^readcode-/, '')} · {e.language === 'c' ? 'C' : e.language} · {e.line_count} lines · <span className="capitalize">{e.difficulty}</span> · about {e.estimated_minutes} min
+                    Exercise {e.id.replace(/^readcode-/, '')} · {languageLabel(e.language)} · {e.line_count} lines · <span className="capitalize">{e.difficulty}</span> · about {e.estimated_minutes} min
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {e.topics.map((t) => <span key={t} className="rounded bg-chip px-2 py-0.5 text-xs text-muted">{t}</span>)}

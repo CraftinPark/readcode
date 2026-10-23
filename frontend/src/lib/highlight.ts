@@ -69,3 +69,55 @@ export function highlightC(source: string): Token[][] {
   push('plain', src.slice(last))
   return lines
 }
+
+// Minimal Python colouring, same token kinds as C. Decorators use 'pre'.
+const PY_KEYWORDS = new Set(
+  `and as assert async await break class continue def del elif else except finally for from global if import
+   in is lambda nonlocal not or pass raise return try while with yield
+   int str bool float bytes dict list set tuple object Optional`.split(/\s+/),
+)
+const PY_CONSTANTS = new Set(['None', 'True', 'False', 'self'])
+
+const PY_TOKEN = new RegExp(
+  [
+    String.raw`(?<com>#.*)`,
+    // An unclosed triple-quoted string runs to the end of the input, not the line ('m' flag).
+    String.raw`(?<str>[rRbBfFuU]{0,2}(?:"""[\s\S]*?(?:"""|(?![\s\S]))|'''[\s\S]*?(?:'''|(?![\s\S]))|"(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?))`,
+    String.raw`(?<pre>^[ \t]*@[\w.]+)`,
+    String.raw`(?<num>\b(?:0[xX][\da-fA-F_]+|\d[\d_]*(?:\.\d+)?(?:[eE][+-]?\d+)?)\b)`,
+    String.raw`(?<word>[A-Za-z_]\w*)`,
+  ].join('|'),
+  'gm',
+)
+
+function classifyPython(word: string): TokenKind {
+  if (PY_KEYWORDS.has(word)) return 'kw'
+  if (PY_CONSTANTS.has(word) || /^[A-Z][A-Z0-9_]{2,}$/.test(word)) return 'const'
+  return 'plain'
+}
+
+export function highlightPython(source: string): Token[][] {
+  const lines: Token[][] = [[]]
+  const push = (kind: TokenKind, text: string) => {
+    text.split('\n').forEach((p, i) => {
+      if (i > 0) lines.push([])
+      if (p) lines[lines.length - 1].push({ kind, text: p })
+    })
+  }
+  const src = source.replace(/\r\n/g, '\n')
+  let last = 0
+  PY_TOKEN.lastIndex = 0
+  for (let m; (m = PY_TOKEN.exec(src)); ) {
+    push('plain', src.slice(last, m.index))
+    const g = m.groups!
+    const kind: TokenKind = g.com ? 'com' : g.str ? 'str' : g.pre ? 'pre' : g.num ? 'num' : classifyPython(m[0])
+    push(kind, m[0])
+    last = m.index + m[0].length
+  }
+  push('plain', src.slice(last))
+  return lines
+}
+
+export function highlightFor(language: string, source: string): Token[][] {
+  return language === 'python' ? highlightPython(source) : highlightC(source)
+}
