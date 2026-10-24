@@ -1,0 +1,237 @@
+{
+ "entries": 240,
+ "by_section": {
+  "Config Errors": 59,
+  "Hardware/Power Failures": 15,
+  "Conflicts": 11,
+  "Time": 5,
+  "Database": 12,
+  "Uncategorized": 138
+ },
+ "keyword_class_counts": {
+  "dns_cert_network": 48,
+  "deploy_upgrade_rollout": 45,
+  "config_change": 40,
+  "cascading_dependency": 35,
+  "overload_capacity": 33,
+  "data_loss_corruption": 30,
+  "failover_recovery": 28,
+  "race_concurrency": 28,
+  "database_schema_migration": 17,
+  "error_handling": 16,
+  "monitoring_gap": 15,
+  "queue_backlog": 13,
+  "retries_amplification": 12,
+  "cache": 11,
+  "time_clock": 11,
+  "integer_overflow_limits": 10,
+  "timeouts": 9,
+  "billing_money": 5,
+  "duplicate_side_effects": 3
+ },
+ "regexes": {
+  "config_change": "config(?:uration)?\\b|misconfigur|feature flag|\\bflag\\b",
+  "deploy_upgrade_rollout": "deploy|rollout|roll(?:ed)? out|upgrad|release|push(?:ed)? to",
+  "overload_capacity": "overload|capacity|load spike|traffic spike|surge|exhaust|saturat|thundering herd|too many",
+  "retries_amplification": "retr(?:y|ies|ied)|reconnect|backoff",
+  "timeouts": "time ?outs?|timed out",
+  "cascading_dependency": "cascad|dependen|downstream|upstream",
+  "database_schema_migration": "migrat|schema|column|index|alter table",
+  "integer_overflow_limits": "overflow|integer|int32|int64|max(?:imum)? (?:value|int)|wraparound|limit was reached|hit the limit",
+  "time_clock": "leap|clock|time ?zone|daylight|date |expir",
+  "cache": "cach",
+  "queue_backlog": "queue|backlog|kafka|rabbitmq",
+  "race_concurrency": "race|concurren|lock|deadlock",
+  "failover_recovery": "failover|fail over|fell back|fallback|recovery|replica|promot",
+  "data_loss_corruption": "data loss|lost data|corrupt|deleted|inconsisten|wrong owner|leak",
+  "dns_cert_network": "\\bdns\\b|certificat|bgp|route|network",
+  "duplicate_side_effects": "duplicat|twice|multiple times|more than once|double",
+  "billing_money": "billing|charg|payment|refund|invoice|money|\\$\\d",
+  "error_handling": "exception|error handling|unhandled|crash|panic|null",
+  "monitoring_gap": "alert|monitor|detect"
+ },
+ "examples": {
+  "config_change": [
+   "Allegro: https://allegro.tech/2018/08/postmortem-why-allegro-went-down.html",
+   "Amazon: https://aws.amazon.com/message/74876-2/",
+   "Cloudflare: https://web.archive.org/web/20211006135542/https://blog.cloudflare.com/todays-outage-post-mortem-82515/",
+   "Cloudflare: https://web.archive.org/web/20211016040522/https://blog.cloudflare.com/cloudflare-outage-on-july-17-2020/",
+   "Cloudflare: https://blog.cloudflare.com/5-december-2025-outage/",
+   "Cloudflare: https://blog.cloudflare.com/cloudflare-incident-march-21-2025/",
+   "Cloudflare: https://blog.cloudflare.com/route-leak-incident-january-22-2026/",
+   "Datadog: https://www.datadoghq.com/blog/2020-09-25-infrastructure-connectivity-issue/"
+  ],
+  "overload_capacity": [
+   "Allegro: https://allegro.tech/2018/08/postmortem-why-allegro-went-down.html",
+   "Amazon: https://aws.amazon.com/message/74876-2/",
+   "GitHub: https://github.blog/news-insights/the-library/dns-outage-post-mortem/",
+   "Google: https://status.cloud.google.com/incident/storage/19002",
+   "Google: https://status.cloud.google.com/incidents/vLsxuKoRvykNHW3nnhsJ",
+   "Amazon: https://aws.amazon.com/message/656481/",
+   "CircleCI: https://status.circleci.com/incidents/8rklh3qqckp1",
+   "CircleCI: https://discuss.circleci.com/t/post-incident-report-april-4-2025-delays-in-starting-workflows/53113"
+  ],
+  "failover_recovery": [
+   "Amazon: https://aws.amazon.com/message/74876-2/",
+   "CircleCI: https://discuss.circleci.com/t/incident-report-november-8-2021-jobs-stuck-in-a-not-running-state/41890",
+   "Enom: https://enomstatus.com/incidents/03q064h6rb7x",
+   "Amazon: https://aws.amazon.com/message/656481/",
+   "Amazon: https://aws.amazon.com/message/56489/",
+   "GitHub: https://github.blog/news-insights/the-library/downtime-last-saturday/",
+   "GitHub: https://blog.github.com/2018-10-30-oct21-post-incident-analysis/",
+   "incident.io: https://incident.io/blog/one-two-skip-a-few"
+  ],
+  "dns_cert_network": [
+   "Amazon: https://aws.amazon.com/message/74876-2/",
+   "Cloudflare: https://web.archive.org/web/20211006135542/https://blog.cloudflare.com/todays-outage-post-mortem-82515/",
+   "Cloudflare: https://web.archive.org/web/20211016040522/https://blog.cloudflare.com/cloudflare-outage-on-july-17-2020/",
+   "Cloudflare: https://web.archive.org/web/20220621124002/https://blog.cloudflare.com/cloudflare-outage-on-june-21-2022/",
+   "Cloudflare: https://blog.cloudflare.com/cloudflare-incident-on-january-24th-2023/",
+   "Cloudflare: https://blog.cloudflare.com/1-1-1-1-lookup-failures-on-october-4th-2023/",
+   "Cloudflare: https://blog.cloudflare.com/18-november-2025-outage/",
+   "Cloudflare: https://blog.cloudflare.com/route-leak-incident-january-22-2026/"
+  ],
+  "deploy_upgrade_rollout": [
+   "CircleCI: https://discuss.circleci.com/t/incident-report-november-8-2021-jobs-stuck-in-a-not-running-state/41890",
+   "CircleCI: https://discuss.circleci.com/t/post-incident-report-april-4-2025-circleci-ui-loading-build-triggering-issues/53208",
+   "Cloudflare: https://web.archive.org/web/20221112015610/https://blog.cloudflare.com/partial-cloudflare-outage-on-october-25-2022/",
+   "Cloudflare: https://blog.cloudflare.com/5-december-2025-outage/",
+   "Cloudflare: https://blog.cloudflare.com/cloudflare-incident-march-21-2025/",
+   "Cloudflare: https://blog.cloudflare.com/cloudflare-incident-on-june-20-2024/",
+   "Cloudflare: https://blog.cloudflare.com/cloudflare-incident-on-october-30-2023/",
+   "GitHub: https://github.blog/news-insights/the-library/dns-outage-post-mortem/"
+  ],
+  "database_schema_migration": [
+   "CircleCI: https://discuss.circleci.com/t/incident-report-november-8-2021-jobs-stuck-in-a-not-running-state/41890",
+   "Enom: https://enomstatus.com/incidents/03q064h6rb7x",
+   "GoCardless: https://gocardless.com/blog/zero-downtime-postgres-migrations-the-hard-parts/",
+   "CircleCI: https://discuss.circleci.com/t/post-incident-report-april-4-2025-delays-in-starting-workflows/53113",
+   "GitHub: https://github.blog/news-insights/the-library/github-availability-this-week/",
+   "GitHub: https://github.blog/news-insights/company-news/github-availability-report-may-2021/",
+   "GitHub: https://github.blog/2022-03-23-an-update-on-recent-service-disruptions/",
+   "GitHub: https://github.blog/2021-12-01-github-availability-report-november-2021/"
+  ],
+  "race_concurrency": [
+   "CircleCI: https://discuss.circleci.com/t/post-incident-report-april-4-2025-circleci-ui-loading-build-triggering-issues/53208",
+   "Firefox: https://web.archive.org/web/20250314111052/https://hacks.mozilla.org/2022/02/retrospective-and-technical-details-on-the-recent-firefox-outage/",
+   "GitHub: https://github.blog/news-insights/company-news/github-availability-report-february-2026/",
+   "Google: https://status.cloud.google.com/incident/compute/16007",
+   "Stack Overflow: https://web.archive.org/web/20201020103424/https://stackstatus.net/post/96025967369/outage-post-mortem-august-25th-2014",
+   "Amazon: https://aws.amazon.com/message/101925/",
+   "GoCardless: https://gocardless.com/blog/zero-downtime-postgres-migrations-the-hard-parts/",
+   "Linux: https://web.archive.org/web/20220427012208/https://lkml.org/lkml/2009/1/2/373"
+  ],
+  "monitoring_gap": [
+   "CircleCI: https://discuss.circleci.com/t/post-incident-report-april-4-2025-circleci-ui-loading-build-triggering-issues/53208",
+   "Cloudflare: https://blog.cloudflare.com/18-november-2025-outage/",
+   "PagerDuty: https://status.pagerduty.com/incidents/vbp7ht2647l8",
+   "FirstEnergy / General Electric: https://en.wikipedia.org/wiki/Northeast_blackout_of_2003",
+   "Amazon: https://aws.amazon.com/message/680342/",
+   "CircleCI: https://circleci.com/blog/jan-4-2023-incident-report/",
+   "CrowdStrike: https://www.crowdstrike.com/falcon-content-update-remediation-and-guidance-hub/",
+   "Duo: https://status.duo.com/incidents/4w07bmvnt359"
+  ],
+  "error_handling": [
+   "Cloudflare: https://web.archive.org/web/20211006135542/https://blog.cloudflare.com/todays-outage-post-mortem-82515/",
+   "Cloudflare: https://blog.cloudflare.com/5-december-2025-outage/",
+   "Sun: https://www.forbes.com/forbes/2000/1113/6613068a.html#6d1bdc036162",
+   "incident.io: https://incident.io/blog/one-two-skip-a-few",
+   "Cloudflare: https://web.archive.org/web/20211104160742/https://blog.cloudflare.com/how-and-why-the-leap-second-affected-cloudflare-dns/",
+   "GitHub: https://github.blog/news-insights/company-news/addressing-githubs-recent-availability-issues/",
+   "GitHub: https://github.blog/2021-12-01-github-availability-report-november-2021/",
+   "AppNexus: https://web.archive.org/web/20250505112812/https://medium.com/xandr-tech/2013-09-17-outage-postmortem-586b19ae4307"
+  ],
+  "cache": [
+   "Cloudflare: https://web.archive.org/web/20221112015610/https://blog.cloudflare.com/partial-cloudflare-outage-on-october-25-2022/",
+   "GitHub: https://github.blog/news-insights/the-library/dns-outage-post-mortem/",
+   "GitHub: https://github.blog/news-insights/company-news/addressing-githubs-recent-availability-issues-2/",
+   "Amazon: https://aws.amazon.com/message/11201/",
+   "BBC Online: https://www.bbc.co.uk/blogs/internet/entries/a37b0470-47d4-3991-82bb-a7d5b8803771",
+   "CircleCI: https://web.archive.org/web/20180121023549/http://circleci.com/blog/mongohq-security-incident-response/",
+   "incident.io: https://incident.io/blog/clouds-caches-and-connection-conundrums",
+   "Launchdarkly: https://launchdarkly.com/blog/what-happened-what-we-learned-and-how-were-improving/"
+  ],
+  "cascading_dependency": [
+   "Cloudflare: https://blog.cloudflare.com/cloudflare-incident-on-october-30-2023/",
+   "Cloudflare: https://blog.cloudflare.com/deep-dive-into-cloudflares-sept-12-dashboard-and-api-outage/",
+   "Datadog: https://www.datadoghq.com/blog/2020-09-25-infrastructure-connectivity-issue/",
+   "Google: https://status.cloud.google.com/incident/storage/19002",
+   "Google: https://status.cloud.google.com/incidents/1xkAB1KmLrh5g3v9ZEZ7",
+   "Google: https://status.cloud.google.com/incidents/6PM5mNd43NbMqjCZ5REh",
+   "Amazon: https://aws.amazon.com/message/656481/",
+   "Cloudflare: https://web.archive.org/web/20211015231917/https://blog.cloudflare.com/a-byzantine-failure-in-the-real-world/"
+  ],
+  "data_loss_corruption": [
+   "Cloudflare: https://blog.cloudflare.com/route-leak-incident-january-22-2026/",
+   "GitHub: https://github.blog/news-insights/the-library/dns-outage-post-mortem/",
+   "Keepthescore: https://web.archive.org/web/20201101133510/https://keepthescore.co/blog/posts/deleting_the_production_database/",
+   "Razorpay: https://web.archive.org/web/20250207075402/https://razorpay.com/blog/day-of-rds-multi-az-failover/",
+   "Sentry: https://blog.sentry.io/2016/06/14/security-incident-june-12-2016",
+   "TravisCI: https://www.traviscistatus.com/incidents/khzk8bg4p9sy",
+   "TravisCI: https://web.archive.org/web/20221220114914/https://blog.travis-ci.com/2016-09-30-the-day-we-deleted-our-vm-images/",
+   "Turso: https://blog.turso.tech/incident-2023-12-04-data-leak-and-loss-in-some-free-tier-databases-7cba5bc7"
+  ],
+  "duplicate_side_effects": [
+   "Enom: https://enomstatus.com/incidents/03q064h6rb7x",
+   "WebKit code repository: https://web.archive.org/web/20210306015541/https://digital.ai/catalyst-blog/subversion-sha1-collision-problem-statement-prevention-and-remediation-options",
+   "AppNexus: https://web.archive.org/web/20250505112812/https://medium.com/xandr-tech/2013-09-17-outage-postmortem-586b19ae4307"
+  ],
+  "timeouts": [
+   "GitHub: https://github.blog/news-insights/the-library/dns-outage-post-mortem/",
+   "GitHub: https://github.blog/news-insights/company-news/addressing-githubs-recent-availability-issues/",
+   "incident.io: https://incident.io/blog/database-performance",
+   "incident.io: https://status.incident.io/incidents/01JRDFKAGE07YYDY0KZR137BX3/write-up",
+   "Amazon: https://aws.amazon.com/message/5467D2/",
+   "Amazon: https://aws.amazon.com/message/65649/",
+   "Chef.io: https://www.chef.io/blog/2014/07/10/supermarket-intermittent-unresponsiveness-postmortem/",
+   "CircleCI: https://discuss.circleci.com/t/postmortem-may-21-2021-delay-in-starting-docker-jobs-machine-remote-docker-environments-blocked/40274"
+  ],
+  "retries_amplification": [
+   "rust-lang: https://blog.rust-lang.org/inside-rust/2023/07/21/crates-io-postmortem.html",
+   "CircleCI: https://discuss.circleci.com/t/post-incident-report-april-4-2025-delays-in-starting-workflows/53113",
+   "GitHub: https://github.blog/news-insights/company-news/addressing-githubs-recent-availability-issues/",
+   "Amazon: https://aws.amazon.com/message/5467D2/",
+   "Amazon: https://aws.amazon.com/message/12721/",
+   "Discord: https://status.discordapp.com/incidents/dj3l6lw926kl",
+   "Discord: https://status.discordapp.com/incidents/qk9cdgnqnhcn",
+   "Launchdarkly: https://launchdarkly.com/blog/what-happened-what-we-learned-and-how-were-improving/"
+  ],
+  "integer_overflow_limits": [
+   "Stack Overflow: https://web.archive.org/web/20201020103424/https://stackstatus.net/post/96025967369/outage-post-mortem-august-25th-2014",
+   "GitHub: https://github.blog/news-insights/company-news/github-availability-report-may-2021/",
+   "Heroku: https://status.heroku.com/incidents/2558",
+   "Basecamp: https://web.archive.org/web/20220529044310/https://m.signalvnoise.com/postmortem-on-the-read-only-outage-of-basecamp-on-november-9th-2018/",
+   "European Space Agency: https://en.wikipedia.org/wiki/Cluster_%28spacecraft%29?oldid=217305667",
+   "Etsy: https://blog.etsy.com/news/2012/demystifying-site-outages/",
+   "Joyent: https://web.archive.org/web/20220528044329/https://www.joyent.com/blog/manta-postmortem-7-27-2015",
+   "Mandrill: https://mailchimp.com/what-we-learned-from-the-recent-mandrill-outage/"
+  ],
+  "queue_backlog": [
+   "TravisCI: https://www.traviscistatus.com/incidents/khzk8bg4p9sy",
+   "GitHub: https://github.blog/news-insights/company-news/github-availability-report-october-2020/",
+   "CircleCI: https://status.circleci.com/incidents/8rklh3qqckp1",
+   "CircleCI: https://circleci.statuspage.io/incidents/hr0mm9xmm3x6",
+   "CircleCI: https://discuss.circleci.com/t/postmortem-march-26-april-10-workflow-delay-incidents/30060",
+   "CircleCI: https://discuss.circleci.com/t/postmortem-may-21-2021-delay-in-starting-docker-jobs-machine-remote-docker-environments-blocked/40274",
+   "Discord: https://status.discordapp.com/incidents/dj3l6lw926kl",
+   "Duo: https://status.duo.com/incidents/4w07bmvnt359"
+  ],
+  "billing_money": [
+   "Knight Capital: https://dougseven.com/2014/04/17/knightmare-a-devops-cautionary-tale/",
+   "OpenAI: https://web.archive.org/web/20240426015133/https://openai.com/blog/march-20-chatgpt-outage",
+   "Parity: https://web.archive.org/web/20180830181639/https://paritytech.io/the-multi-sig-hack-a-postmortem/",
+   "Shapeshift: http://web.archive.org/web/20160610080136/https://www.scribd.com/doc/309574927/ShapeShift-Post-Mortem-Public",
+   "Twilio: https://www.twilio.com/blog/2013/07/billing-incident-post-mortem-breakdown-analysis-and-root-cause.html"
+  ],
+  "time_clock": [
+   "Azure: https://azure.microsoft.com/en-us/blog/summary-of-windows-azure-service-disruption-on-feb-29th-2012/",
+   "Cloudflare: https://web.archive.org/web/20211104160742/https://blog.cloudflare.com/how-and-why-the-leap-second-affected-cloudflare-dns/",
+   "Linux: https://web.archive.org/web/20220427012208/https://lkml.org/lkml/2009/1/2/373",
+   "Linux: https://web.archive.org/web/20220320100036/https://lkml.org/lkml/2012/7/1/203",
+   "Mozilla: https://web.archive.org/web/20250303152906/https://hacks.mozilla.org/2019/07/add-ons-outage-post-mortem-result/",
+   "AppNexus: https://web.archive.org/web/20250505112812/https://medium.com/xandr-tech/2013-09-17-outage-postmortem-586b19ae4307",
+   "Basecamp: https://web.archive.org/web/20220529044310/https://m.signalvnoise.com/postmortem-on-the-read-only-outage-of-basecamp-on-november-9th-2018/",
+   "CrowdStrike: https://www.crowdstrike.com/falcon-content-update-remediation-and-guidance-hub/"
+  ]
+ }
+}
