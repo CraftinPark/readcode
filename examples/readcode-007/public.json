@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "id": "readcode-007",
+  "version": 1,
+  "title": "Promo orders a few cents off",
+  "language": "python",
+  "difficulty": "hard",
+  "track": "payments-infra",
+  "area": "payments-core",
+  "rung": 4,
+  "topics": [
+    "api",
+    "payments",
+    "multi-tenant"
+  ],
+  "estimated_minutes": 25,
+  "files": [
+    {
+      "path": "README.md",
+      "line_count": 32
+    },
+    {
+      "path": "market/app.py",
+      "line_count": 155
+    },
+    {
+      "path": "market/orders.py",
+      "line_count": 86
+    },
+    {
+      "path": "market/pricing.py",
+      "line_count": 47
+    },
+    {
+      "path": "market/payments.py",
+      "line_count": 83
+    },
+    {
+      "path": "market/dispatch.py",
+      "line_count": 41
+    },
+    {
+      "path": "market/payouts.py",
+      "line_count": 46
+    },
+    {
+      "path": "market/catalog.py",
+      "line_count": 54
+    },
+    {
+      "path": "market/money.py",
+      "line_count": 26
+    },
+    {
+      "path": "market/providers.py",
+      "line_count": 49
+    },
+    {
+      "path": "market/db.py",
+      "line_count": 147
+    },
+    {
+      "path": "market/seed.py",
+      "line_count": 33
+    },
+    {
+      "path": "market/__init__.py",
+      "line_count": 1
+    },
+    {
+      "path": "tests/test_smoke.py",
+      "line_count": 84
+    },
+    {
+      "path": "pytest.ini",
+      "line_count": 3
+    }
+  ],
+  "license": {
+    "spdx": "LicenseRef-ReadCode-Original",
+    "attribution": "Written for ReadCode. Not affiliated with any delivery company."
+  },
+  "questions": [],
+  "design_prompts": [],
+  "playground": {
+    "kind": "backend-console",
+    "engine": "market",
+    "presets": [
+      {
+        "label": "Order: noodles",
+        "method": "POST",
+        "path": "/orders",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "items": [
+            {
+              "item_id": "itm_noodles"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Order: 3 small plates + SAVE10",
+        "method": "POST",
+        "path": "/orders",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "promo_code": "SAVE10",
+          "items": [
+            {
+              "item_id": "itm_bao"
+            },
+            {
+              "item_id": "itm_rolls"
+            },
+            {
+              "item_id": "itm_soup"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Quote a cart",
+        "method": "POST",
+        "path": "/quote",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "promo_code": "SAVE10",
+          "items": [
+            {
+              "item_id": "itm_dumplings"
+            },
+            {
+              "item_id": "itm_bao"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Restaurants open now",
+        "method": "GET",
+        "path": "/restaurants?open_now=true",
+        "headers": {}
+      },
+      {
+        "label": "Cancel order (edit id)",
+        "method": "POST",
+        "path": "/orders/ORDER_ID/cancel",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        }
+      },
+      {
+        "label": "Staff: accept (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/accept",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: dispatch (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/dispatch",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: picked up (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/picked_up",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: delivered (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/delivered",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: refund 3.35 (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/refund",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        },
+        "body": {
+          "amount": 335
+        }
+      },
+      {
+        "label": "Staff: run payouts",
+        "method": "POST",
+        "path": "/admin/payouts/run",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: reconciliation",
+        "method": "GET",
+        "path": "/admin/reconciliation",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: couriers",
+        "method": "GET",
+        "path": "/admin/couriers",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": "T1",
+      "type": "incident",
+      "text": "Finance team: \"Our nightly reconciliation flags 2-3% of orders as off by one to three cents: what the customer was charged doesn't equal what we pay the restaurant on plus delivery fee and tax. Every flagged order used a promo code, but most promo orders are fine. Example from yesterday: Bao, Spring rolls and Hot and sour soup with SAVE10 is off by +1 cent.\" Find the cause.",
+      "parts": [
+        {
+          "id": "where",
+          "prompt": "Where is the cause? Select the lines in the code (any file).",
+          "select": "lines"
+        },
+        {
+          "id": "why",
+          "prompt": "Why does that produce what they see?",
+          "options": [
+            {
+              "id": "a",
+              "text": "percent() rounds half up, so the order discount itself comes out a cent too high."
+            },
+            {
+              "id": "b",
+              "text": "Each line's share of the discount is rounded on its own, so the shares can add up to more or less than the order discount and the lines' net no longer matches the food total."
+            },
+            {
+              "id": "c",
+              "text": "Tax is computed on the food total, but restaurants are paid on line amounts before tax."
+            },
+            {
+              "id": "d",
+              "text": "The promo also discounts the delivery fee on the order, but not on the lines."
+            }
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "Which change fixes it?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Round the order discount down instead of half up",
+              "diff": "--- a/market/pricing.py\n+++ b/market/pricing.py\n@@ quote\n-        discount = percent(subtotal, promo[\"percent_off\"])\n+        discount = int(subtotal * promo[\"percent_off\"] / 100)\n"
+            },
+            {
+              "id": "b",
+              "text": "Share the discount so the parts add up exactly",
+              "diff": "--- a/market/pricing.py\n+++ b/market/pricing.py\n@@\n-from .money import percent\n+from .money import allocate, percent\n@@ quote\n-    shares = [percent(l[\"amount\"], discount * 100 / subtotal) for l in lines]\n+    shares = allocate(discount, [l[\"amount\"] for l in lines])\n"
+            },
+            {
+              "id": "c",
+              "text": "Use the promo's own percentage for each line",
+              "diff": "--- a/market/pricing.py\n+++ b/market/pricing.py\n@@ quote\n-    shares = [percent(l[\"amount\"], discount * 100 / subtotal) for l in lines]\n+    shares = [percent(l[\"amount\"], promo[\"percent_off\"]) if promo_code else 0 for l in lines]\n"
+            },
+            {
+              "id": "d",
+              "text": "Let reconciliation tolerate a few cents",
+              "diff": "--- a/market/app.py\n+++ b/market/app.py\n@@ reconciliation\n-            if expected != o[\"total\"]:\n+            if abs(expected - o[\"total\"]) > 3:\n"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

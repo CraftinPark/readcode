@@ -28,7 +28,7 @@ except ImportError:
 FILES = ("public", "key", "manifest")
 KEY_ONLY_FIELDS = {"key_points", "anchors", "mechanism_anchors", "red_herrings", "fix", "grader_instructions",
                    "skills", "answer_bug_ids", "verdict", "has_defect", "correct_option", "distractors",
-                   "part_answers", "part_weights"}
+                   "part_answers", "part_weights", "part_locations"}
 DEFAULT_TAXONOMY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "taxonomy", "taxonomy.json")
 HINT_WORDS = re.compile(r"\b(BUG|FIXME|XXX|HACK|seeded|mutant|injected|vulnerab\w*)\b", re.I)
 
@@ -157,15 +157,22 @@ def check_tags(rep, tax, pub, key, code_text=""):
 
 def check_parts(rep, where, parts, k, files):
     """Multiple-choice parts: one answer per part, real options, weights summing to 100, valid locations."""
-    answers, weights = k.get("part_answers", {}), k.get("part_weights", {})
+    answers, weights, located = k.get("part_answers", {}), k.get("part_weights", {}), k.get("part_locations", {})
     ids = [x["id"] for x in parts]
     if len(ids) != len(set(ids)):
         rep.err(where, "duplicate part ids")
-    if set(answers) != set(ids):
-        rep.err(where, f"parts are {sorted(ids)} but part_answers covers {sorted(answers)}")
+    choice = {x["id"] for x in parts if "options" in x}
+    select = {x["id"] for x in parts if x.get("select") == "lines"}
+    if set(answers) != choice or set(located) != select:
+        rep.err(where, f"multiple-choice parts {sorted(choice)} need part_answers (got {sorted(answers)}); "
+                       f"line parts {sorted(select)} need part_locations (got {sorted(located)})")
+    for pid, ranges in located.items():
+        for r in ranges:
+            if r["file"] not in files or not 1 <= r["start_line"] <= r["end_line"] <= files[r["file"]]:
+                rep.err(where, f"part {pid}: answer lines {r['start_line']}-{r['end_line']} not in {r['file']}")
     if set(weights) != set(ids) or not math.isclose(sum(weights.values()), 100):
         rep.err(where, f"part_weights must cover {sorted(ids)} and sum to 100 (got {weights})")
-    for part in parts:
+    for part in (x for x in parts if "options" in x):
         opts = {o["id"] for o in part["options"]}
         if len(opts) != len(part["options"]):
             rep.err(where, f"part {part['id']} has duplicate option ids")
@@ -178,7 +185,7 @@ def check_parts(rep, where, parts, k, files):
     for d in k.get("distractors", {}):
         part_id, _, opt = d.partition(".")
         part = next((x for x in parts if x["id"] == part_id), None)
-        if parts and (part is None or opt not in {o["id"] for o in part["options"]} or opt == answers.get(part_id)):
+        if parts and (part is None or opt not in {o["id"] for o in part.get("options", [])} or opt == answers.get(part_id)):
             rep.err(where, f"distractor '{d}' is not a wrong option of a part")
 
 

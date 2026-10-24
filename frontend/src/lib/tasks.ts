@@ -51,39 +51,41 @@ export function ticketParts(t: PublicTask): { from: string; quote: string | null
 }
 
 export function canSubmitTask(t: PublicTask, a: TaskAnswer): boolean {
-  if (t.parts) return t.parts.every((p) => !!a.answers[p.id])
+  if (t.parts) return t.parts.every((p) => (p.select ? a.ranges.length > 0 : !!a.answers[p.id]))
+  if (t.type === 'trace') return !!a.option            // graded on the option; the reasoning is optional
   if (!a.explanation.trim()) return false
   if (t.type === 'incident') return a.ranges.length > 0
   if (t.type === 'review_pr') return !!a.verdict
   return !!a.option
 }
 
-const key = (id: string, version: number, task: string) => `readcode:task:${id}:v${version}:${task}`
+// scope keeps a study participant's answers apart from ordinary practice.
+const key = (id: string, version: number, task: string, scope = '') => `readcode:task:${scope ? `${scope}:` : ''}${id}:v${version}:${task}`
 
 export function emptyTaskAnswer(): TaskAnswer {
   return { startedAt: Date.now(), answers: {}, ranges: [], explanation: '', fix: '' }
 }
 
-export function loadTaskAnswer(id: string, version: number, task: string): TaskAnswer | null {
+export function loadTaskAnswer(id: string, version: number, task: string, scope = ''): TaskAnswer | null {
   try {
-    const raw = localStorage.getItem(key(id, version, task))
+    const raw = localStorage.getItem(key(id, version, task, scope))
     return raw ? { ...emptyTaskAnswer(), ...JSON.parse(raw) } : null
   } catch {
     return null
   }
 }
 
-export function saveTaskAnswer(id: string, version: number, task: string, a: TaskAnswer) {
+export function saveTaskAnswer(id: string, version: number, task: string, a: TaskAnswer, scope = '') {
   try {
-    localStorage.setItem(key(id, version, task), JSON.stringify(a))
+    localStorage.setItem(key(id, version, task, scope), JSON.stringify(a))
   } catch {
     // Storage blocked: the page still works, it just won't survive a refresh.
   }
 }
 
-export function clearTaskAnswer(id: string, version: number, task: string) {
+export function clearTaskAnswer(id: string, version: number, task: string, scope = '') {
   try {
-    localStorage.removeItem(key(id, version, task))
+    localStorage.removeItem(key(id, version, task, scope))
   } catch {
     /* ignore */
   }
@@ -101,7 +103,7 @@ export function buildTaskSubmission(ex: PublicExercise, t: PublicTask, a: TaskAn
     submitted_at: now.toISOString(),
     time_spent_minutes: Math.max(0, Math.round((now.getTime() - a.startedAt) / 6000) / 10),
     locations: [...a.ranges].sort((x, y) => x.file.localeCompare(y.file) || x.start_line - y.start_line),
-    ...(t.parts ? { answers: Object.fromEntries(t.parts.map((p) => [p.id, a.answers[p.id]]).filter(([, v]) => v)) } : {}),
+    ...(t.parts ? { answers: Object.fromEntries(t.parts.filter((p) => p.options).map((p) => [p.id, a.answers[p.id]]).filter(([, v]) => v)) } : {}),
     ...(a.explanation.trim() ? { explanation: a.explanation.trim() } : {}),
     ...(a.fix.trim() ? { fix: a.fix.trim() } : {}),
     ...(t.type === 'review_pr' && a.verdict ? { verdict: a.verdict } : {}),

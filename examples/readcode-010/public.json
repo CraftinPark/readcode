@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "id": "readcode-010",
+  "version": 1,
+  "title": "Couriers vanish in the evening",
+  "language": "python",
+  "difficulty": "medium",
+  "track": "payments-infra",
+  "area": "infra-reliability",
+  "rung": 3,
+  "topics": [
+    "api",
+    "payments",
+    "multi-tenant"
+  ],
+  "estimated_minutes": 20,
+  "files": [
+    {
+      "path": "README.md",
+      "line_count": 32
+    },
+    {
+      "path": "market/app.py",
+      "line_count": 155
+    },
+    {
+      "path": "market/orders.py",
+      "line_count": 86
+    },
+    {
+      "path": "market/pricing.py",
+      "line_count": 47
+    },
+    {
+      "path": "market/payments.py",
+      "line_count": 83
+    },
+    {
+      "path": "market/dispatch.py",
+      "line_count": 41
+    },
+    {
+      "path": "market/payouts.py",
+      "line_count": 46
+    },
+    {
+      "path": "market/catalog.py",
+      "line_count": 54
+    },
+    {
+      "path": "market/money.py",
+      "line_count": 26
+    },
+    {
+      "path": "market/providers.py",
+      "line_count": 49
+    },
+    {
+      "path": "market/db.py",
+      "line_count": 147
+    },
+    {
+      "path": "market/seed.py",
+      "line_count": 33
+    },
+    {
+      "path": "market/__init__.py",
+      "line_count": 1
+    },
+    {
+      "path": "tests/test_smoke.py",
+      "line_count": 84
+    },
+    {
+      "path": "pytest.ini",
+      "line_count": 3
+    }
+  ],
+  "license": {
+    "spdx": "LicenseRef-ReadCode-Original",
+    "attribution": "Written for ReadCode. Not affiliated with any delivery company."
+  },
+  "questions": [],
+  "design_prompts": [],
+  "playground": {
+    "kind": "backend-console",
+    "engine": "market",
+    "presets": [
+      {
+        "label": "Order: noodles",
+        "method": "POST",
+        "path": "/orders",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "items": [
+            {
+              "item_id": "itm_noodles"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Order: 3 small plates + SAVE10",
+        "method": "POST",
+        "path": "/orders",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "promo_code": "SAVE10",
+          "items": [
+            {
+              "item_id": "itm_bao"
+            },
+            {
+              "item_id": "itm_rolls"
+            },
+            {
+              "item_id": "itm_soup"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Quote a cart",
+        "method": "POST",
+        "path": "/quote",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "promo_code": "SAVE10",
+          "items": [
+            {
+              "item_id": "itm_dumplings"
+            },
+            {
+              "item_id": "itm_bao"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Restaurants open now",
+        "method": "GET",
+        "path": "/restaurants?open_now=true",
+        "headers": {}
+      },
+      {
+        "label": "Cancel order (edit id)",
+        "method": "POST",
+        "path": "/orders/ORDER_ID/cancel",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        }
+      },
+      {
+        "label": "Staff: accept (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/accept",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: dispatch (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/dispatch",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: picked up (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/picked_up",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: delivered (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/delivered",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: refund 3.35 (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/refund",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        },
+        "body": {
+          "amount": 335
+        }
+      },
+      {
+        "label": "Staff: run payouts",
+        "method": "POST",
+        "path": "/admin/payouts/run",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: reconciliation",
+        "method": "GET",
+        "path": "/admin/reconciliation",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: couriers",
+        "method": "GET",
+        "path": "/admin/couriers",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": "T1",
+      "type": "incident",
+      "text": "Dispatch lead: \"Every evening, from around 19:00, dispatching starts failing with 'No courier is available right now', although the live map shows couriers on shift and idle. Restarting the service doesn't help. Two couriers told us their app says they are at their job limit while they have no jobs.\" Find the cause.",
+      "parts": [
+        {
+          "id": "where",
+          "prompt": "Where is the cause? Select the lines in the code (any file).",
+          "select": "lines"
+        },
+        {
+          "id": "why",
+          "prompt": "Why does that produce what they see?",
+          "options": [
+            {
+              "id": "a",
+              "text": "MAX_ACTIVE_JOBS is 2, which is too low for evening volume."
+            },
+            {
+              "id": "b",
+              "text": "assign() always picks the courier with the lowest id, so one courier gets every order."
+            },
+            {
+              "id": "c",
+              "text": "release() refuses to go below zero, so the counter drifts upward."
+            },
+            {
+              "id": "d",
+              "text": "Cancelling an order that has a courier assigned but not yet picked up never gives the courier their slot back, so each such cancellation leaves a phantom job on the courier."
+            }
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "Which change fixes it?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Allow 4 jobs per courier",
+              "diff": "--- a/market/dispatch.py\n+++ b/market/dispatch.py\n-MAX_ACTIVE_JOBS = 2\n+MAX_ACTIVE_JOBS = 4\n"
+            },
+            {
+              "id": "b",
+              "text": "Free the courier for assigned and picked-up orders",
+              "diff": "--- a/market/orders.py\n+++ b/market/orders.py\n@@ cancel\n-        if order[\"status\"] == \"picked_up\":\n+        if order[\"status\"] in (\"assigned\", \"picked_up\"):\n             dispatch.release(conn, order[\"courier_id\"])\n"
+            },
+            {
+              "id": "c",
+              "text": "Reset every courier's counter nightly",
+              "diff": "--- a/ops/schedule.yaml\n+++ b/ops/schedule.yaml\n+  reset_couriers: \"0 4 * * *\"   # UPDATE couriers SET active_jobs = 0\n"
+            },
+            {
+              "id": "d",
+              "text": "Clear the courier on cancelled orders",
+              "diff": "--- a/market/orders.py\n+++ b/market/orders.py\n@@ cancel\n-        conn.execute(\"UPDATE orders SET status = 'cancelled', updated_ms = ? WHERE id = ?\", (now_ms, order_id))\n+        conn.execute(\"UPDATE orders SET status = 'cancelled', courier_id = NULL, updated_ms = ? WHERE id = ?\", (now_ms, order_id))\n"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

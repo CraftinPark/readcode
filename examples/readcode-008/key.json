@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "id": "readcode-008",
+  "version": 1,
+  "scoring": {
+    "total": 100,
+    "sections": {
+      "comprehension": 0,
+      "bugs": 100,
+      "design": 0,
+      "improvements": 0
+    }
+  },
+  "comprehension": [],
+  "design": [],
+  "improvements": {
+    "weight": 0,
+    "expected_themes": []
+  },
+  "red_herrings": [],
+  "bugs": [
+    {
+      "id": "B1",
+      "title": "Local time uses the offset saved at sign-up",
+      "severity": "medium",
+      "category": "time",
+      "weight": 100,
+      "skills": [
+        "input-validation"
+      ],
+      "locations": [
+        {
+          "file": "market/catalog.py",
+          "function": "local_time",
+          "start_line": 28,
+          "end_line": 31
+        }
+      ],
+      "description": "catalog.local_time adds utc_offset_minutes, the restaurant's UTC offset at sign-up (summer, UTC-4 in Toronto). Since the clocks went back on 1 November, Toronto is UTC-5, so the app believes it is an hour later than it is: the restaurant opens an hour early and closes an hour early.",
+      "mechanism_anchors": [
+        "utc_offset_minutes is a fixed offset saved at sign-up",
+        "daylight saving time changed the real offset",
+        "the app thinks it is an hour later",
+        "the timezone column exists and is no longer used"
+      ],
+      "fix": "Convert with the restaurant's IANA time zone (ZoneInfo(restaurant['timezone']))."
+    }
+  ],
+  "grader_instructions": [
+    "Task-only marketplace problem. 'where' is graded by line overlap (within 3 lines) with the planted lines; 'why' and 'fix' are multiple choice."
+  ],
+  "tasks": [
+    {
+      "task_id": "T1",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B1"
+      ],
+      "part_answers": {
+        "why": "c",
+        "fix": "a"
+      },
+      "part_locations": {
+        "where": [
+          {
+            "file": "market/catalog.py",
+            "start_line": 31,
+            "end_line": 31
+          }
+        ]
+      },
+      "part_weights": {
+        "where": 40,
+        "why": 40,
+        "fix": 20
+      },
+      "distractors": {
+        "why.a": "Dragon's hours (11:00-22:00) do not wrap past midnight",
+        "why.b": "that would cost a minute, not an hour, and not explain early orders",
+        "why.d": "the time is converted, just with the wrong offset",
+        "fix.b": "right until the clocks change again in March, then wrong the other way",
+        "fix.c": "daylight saving dates differ by year and by country, and some zones never change",
+        "fix.d": "a fixed UTC opening time is wrong for half the year"
+      }
+    }
+  ]
+}

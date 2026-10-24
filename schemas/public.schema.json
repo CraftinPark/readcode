@@ -51,6 +51,7 @@
       "description": "A runnable sandbox of the shipped code (served by backend/playground) for reproducing tickets.",
       "properties": {
         "kind": {"const": "backend-console"},
+        "engine": {"enum": ["payments", "market"], "description": "Which playground harness runs this code; default payments"},
         "presets": {
           "type": "array", "minItems": 1,
           "items": {
@@ -108,12 +109,14 @@
           "type": "array", "minItems": 1,
           "description": "Multiple-choice parts (SAT style), e.g. where / why / fix. Graded exactly, no judge.",
           "items": {
-            "type": "object", "additionalProperties": false, "required": ["id", "prompt", "options"],
+            "type": "object", "additionalProperties": false, "required": ["id", "prompt"],
             "properties": {
               "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
               "prompt": {"type": "string", "minLength": 5},
-              "options": {"$ref": "#/$defs/options"}
-            }
+              "options": {"$ref": "#/$defs/options"},
+              "select": {"const": "lines", "description": "Answered by selecting lines in the code, not by picking an option"}
+            },
+            "oneOf": [{"required": ["options"]}, {"required": ["select"]}]
           }
         }
       },

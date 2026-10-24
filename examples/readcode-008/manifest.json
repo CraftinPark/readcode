@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "id": "readcode-008",
+  "source": {
+    "kind": "generated",
+    "license_spdx": "LicenseRef-ReadCode-Original",
+    "original_sha256": "9ea59fb85d9bc84282b0878a4a7c9f369f7402ecda106a64433664961e689bf7"
+  },
+  "baseline": {
+    "path": "internal/baseline",
+    "sha256": "9ea59fb85d9bc84282b0878a4a7c9f369f7402ecda106a64433664961e689bf7",
+    "changes_summary": "The shared marketplace codebase (examples/_sources/market), clean. code/ is this with one planted bug from problems.py.",
+    "gate_a": {
+      "passed": true,
+      "tests_run": 5,
+      "tools": [
+        "test-driver"
+      ],
+      "evidence_file": "internal/evidence/gate_a.txt"
+    }
+  },
+  "shipped": [
+    {
+      "path": "README.md",
+      "sha256": "62832cfd231dff732a825f74275a3e9928c5e9c3a55558f6e61210d1ce7a8af8"
+    },
+    {
+      "path": "market/__init__.py",
+      "sha256": "f2309bbf8022ad44d1bfce3dbc691b63d12ec631b3f94fdae248203cbbc90532"
+    },
+    {
+      "path": "market/app.py",
+      "sha256": "ae07c3bdaf5690ecaf2cc520928011a43aacfe3d660418982baa14ff75a06d52"
+    },
+    {
+      "path": "market/catalog.py",
+      "sha256": "39260a4d3639eff3de8cffa4952a114353d6c47a49ac3fe86a0b836164f71163"
+    },
+    {
+      "path": "market/db.py",
+      "sha256": "0ccc7574fdf8225184e32882dabfe1941f14bfdf76843ad7d3a70e69701132a0"
+    },
+    {
+      "path": "market/dispatch.py",
+      "sha256": "a9ab2dec3c8725db62910da2c40f7e7905ab22543b8064012b13e3f96f147816"
+    },
+    {
+      "path": "market/money.py",
+      "sha256": "b0749b31909b94d11df37759d6067680dd50d0755f76dfa270427951e0cc7cd7"
+    },
+    {
+      "path": "market/orders.py",
+      "sha256": "12025abccd64163b4e87f4d00150317efb7d52351d66023c20a76c9bf4d9b2ca"
+    },
+    {
+      "path": "market/payments.py",
+      "sha256": "b47eb79e2d48f4ffedf5e5ce15ad41b4889b1e92d61ca9b70a17b2f5a2df7036"
+    },
+    {
+      "path": "market/payouts.py",
+      "sha256": "abcae175be5b17624d664d38db96a401a1f9f43d33fb813f0d328d4845b3d382"
+    },
+    {
+      "path": "market/pricing.py",
+      "sha256": "ec28cbcf65a96b435b48cacd47a2cbf6e2ded8ec98e18586454bd3b6cd5911e4"
+    },
+    {
+      "path": "market/providers.py",
+      "sha256": "db900b9ba564eef94b00df6421855a92a5174cf31841381862be35b916efe81f"
+    },
+    {
+      "path": "market/seed.py",
+      "sha256": "9c6f9bafe79c045dfdc4fbd837170b608c514de4799ca2f342638ffdb8a25021"
+    },
+    {
+      "path": "pytest.ini",
+      "sha256": "b160d82f7811555051f8966d8e02750a985227c1d022208c784e606946f2eada"
+    },
+    {
+      "path": "tests/test_smoke.py",
+      "sha256": "635a5538aff66fde2239cbcc84fc261d4fb2ac633e1d22990326c831d72b2cbd"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "B1",
+      "file": "market/catalog.py",
+      "line": 31,
+      "change": {
+        "old": "    return now_utc.astimezone(ZoneInfo(restaurant[\"timezone\"]))\n",
+        "new": "    return now_utc + timedelta(minutes=restaurant[\"utc_offset_minutes\"])\n"
+      },
+      "gate_b": {
+        "detected": true,
+        "detected_by": "test-driver",
+        "evidence_file": "internal/evidence/B1.txt"
+      }
+    }
+  ],
+  "review": {
+    "status": "pending",
+    "notes": "Marketplace problem (danny-v0). Needs a fresh-agent pilot solve and human review."
+  }
+}

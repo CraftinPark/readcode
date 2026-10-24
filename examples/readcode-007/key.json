@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "id": "readcode-007",
+  "version": 1,
+  "scoring": {
+    "total": 100,
+    "sections": {
+      "comprehension": 0,
+      "bugs": 100,
+      "design": 0,
+      "improvements": 0
+    }
+  },
+  "comprehension": [],
+  "design": [],
+  "improvements": {
+    "weight": 0,
+    "expected_themes": []
+  },
+  "red_herrings": [],
+  "bugs": [
+    {
+      "id": "B1",
+      "title": "Each line's discount is rounded on its own",
+      "severity": "medium",
+      "category": "money",
+      "weight": 100,
+      "skills": [
+        "money-invariants"
+      ],
+      "locations": [
+        {
+          "file": "market/pricing.py",
+          "function": "quote",
+          "start_line": 17,
+          "end_line": 47
+        }
+      ],
+      "description": "pricing.quote gives each line the order's effective discount rate and rounds each share separately. The shares can add up to a cent or two more or less than the order discount, so the lines' net amounts (what restaurants are paid on) no longer add up to the food total the customer paid. Only some carts trigger it, e.g. three items at 3.35 with SAVE10: discount 1.01, shares 0.34 x 3 = 1.02.",
+      "mechanism_anchors": [
+        "shares rounded independently",
+        "sum of shares differs from the order discount",
+        "money.allocate exists to hand out leftover cents and is no longer used",
+        "only carts whose shares round the same way are affected"
+      ],
+      "fix": "Share the order discount with money.allocate, which makes the shares add up exactly."
+    }
+  ],
+  "grader_instructions": [
+    "Task-only marketplace problem. 'where' is graded by line overlap (within 3 lines) with the planted lines; 'why' and 'fix' are multiple choice."
+  ],
+  "tasks": [
+    {
+      "task_id": "T1",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B1"
+      ],
+      "part_answers": {
+        "why": "b",
+        "fix": "b"
+      },
+      "part_locations": {
+        "where": [
+          {
+            "file": "market/pricing.py",
+            "start_line": 39,
+            "end_line": 39
+          }
+        ]
+      },
+      "part_weights": {
+        "where": 40,
+        "why": 40,
+        "fix": 20
+      },
+      "distractors": {
+        "why.a": "the order discount (1.01 on 10.05) is right; the shares are what drift",
+        "why.c": "tax is never part of what restaurants are paid on, by design; reconciliation adds it back",
+        "why.d": "the delivery fee is never discounted",
+        "fix.a": "the shares are still rounded one by one and can still miss the total",
+        "fix.c": "each share is still rounded on its own; the drift stays",
+        "fix.d": "hides the report while restaurants keep being paid on the wrong amounts"
+      }
+    }
+  ]
+}

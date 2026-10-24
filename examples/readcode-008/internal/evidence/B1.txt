@@ -1,0 +1,18 @@
+== test_p2_opening_hours_follow_the_clock_change on shipped: FAIL (must fail)
+F                                                                        [100%]
+================================== FAILURES ===================================
+________________ test_p2_opening_hours_follow_the_clock_change ________________
+
+env = (<starlette.testclient.TestClient object at 0x000002318CBEB620>, FakeProvider(payments={}, refunds={}, outbox=[], cloc...000002318CA6DD30>), <test_gates.Clock object at 0x000002318CA6DD30>, <sqlite3.Connection object at 0x000002318CC522F0>)
+
+    def test_p2_opening_hours_follow_the_clock_change(env):
+        """Restaurant: since the clocks went back, orders arrive before we open."""
+        client, provider, clock, conn = env
+        clock.t = utc(2026, 11, 3, 15, 30)                 # 10:30 in Toronto on the Tuesday after the change
+>       assert "Dragon Noodle House" not in [r["name"] for r in client.get("/restaurants?open_now=true").json()]
+E       AssertionError: assert 'Dragon Noodle House' not in ['Dragon Noodle House']
+
+internal\verification\test_gates.py:100: AssertionError
+=========================== short test summary info ===========================
+FAILED internal\verification\test_gates.py::test_p2_opening_hours_follow_the_clock_change
+1 failed in 0.57s

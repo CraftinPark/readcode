@@ -1,0 +1,19 @@
+== t0 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.56s
+
+== test_p5_a_late_payment_event_does_not_revive_a_refunded_order on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.50s
+
+== t0 on shipped (must pass: the bug only shows in its scenario): PASS
+.                                                                        [100%]
+1 passed in 0.57s
+
+== smoke tests on baseline: PASS
+.....                                                                    [100%]
+5 passed in 0.76s
+
+== smoke tests on shipped (the candidate's own tests pass): PASS
+.....                                                                    [100%]
+5 passed in 0.76s

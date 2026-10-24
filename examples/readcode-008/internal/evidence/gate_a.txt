@@ -1,0 +1,19 @@
+== t0 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.56s
+
+== test_p2_opening_hours_follow_the_clock_change on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.48s
+
+== t0 on shipped (must pass: the bug only shows in its scenario): PASS
+.                                                                        [100%]
+1 passed in 0.59s
+
+== smoke tests on baseline: PASS
+.....                                                                    [100%]
+5 passed in 0.77s
+
+== smoke tests on shipped (the candidate's own tests pass): PASS
+.....                                                                    [100%]
+5 passed in 0.76s

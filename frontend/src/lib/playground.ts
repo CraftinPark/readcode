@@ -1,18 +1,19 @@
 // Client for the backend playground (backend/playground): a running copy of an
-// example's shipped code that the candidate can send requests to, break with
-// faults, and inspect (logs, database rows, card network, webhooks).
+// example's shipped code. The server describes its own controls and panels, so
+// one console works for every example.
+
+export interface PlaygroundControl {
+  id: string
+  label: string
+  kind: 'button' | 'toggle' | 'datetime' | 'note'
+  on?: boolean
+}
 
 export interface PlaygroundState {
   session?: string
   clock: string
-  faults: { timeout_after_charge: boolean; crash_after_charge: boolean }
-  card_network: {
-    authorizations: { id: string; reference: string; amount: number; currency: string }[]
-    refunds: { reference: string; authorization: string; amount: number }[]
-    total_authorized: number
-  }
-  tables: Record<string, Record<string, unknown>[]>
-  webhooks: { url: string; type: string; event: string; reply: number }[]
+  controls: { group: string; items: PlaygroundControl[] }[]
+  panels: { id: string; title: string; rows: Record<string, unknown>[] }[]
   logs: string[]
   response?: { status: number; body: unknown }
 }
@@ -32,7 +33,5 @@ export const playground = {
   start: (example: string) => call(`/api/playground/${example}/sessions`, {}),
   request: (sid: string, req: { method: string; path: string; headers: Record<string, string>; body?: unknown }) =>
     call(`/api/playground/sessions/${sid}/request`, req),
-  faults: (sid: string, f: Partial<PlaygroundState['faults']>) => call(`/api/playground/sessions/${sid}/faults`, f),
-  clock: (sid: string, seconds: number) => call(`/api/playground/sessions/${sid}/clock`, { seconds }),
-  deliver: (sid: string, reply_status: number) => call(`/api/playground/sessions/${sid}/webhooks/deliver`, { reply_status }),
+  act: (sid: string, action: string, value?: unknown) => call(`/api/playground/sessions/${sid}/act`, { action, value }),
 }

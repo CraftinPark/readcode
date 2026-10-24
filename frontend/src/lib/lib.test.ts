@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest'
 import { highlightC, highlightFor } from './highlight'
 import { allFunctions, functionAt, outlineFor, parseOutline, parsePythonOutline } from './outline'
 import { buildSubmission } from './submission'
+import { buildBundle, fnv1a, formFor, missingAnswers, newProgress, orderFor } from './study'
+import type { Study } from './study'
 import { languageOf, prepareFile, primaryFile } from './files'
 import { buildTaskSubmission, canSubmitTask, taskTitle, ticketParts } from './tasks'
 import type { TaskAnswer } from './tasks'
@@ -151,6 +153,34 @@ describe('multi-file exercises and tasks', () => {
     expect(sub.answers).toEqual({ where: 'b', why: 'b', fix: 'c' })
     expect(sub).not.toHaveProperty('explanation')
     expect(validate(sub)).toBe(true)
+  })
+})
+
+describe('study mode', () => {
+  const study: Study = JSON.parse(readFileSync(resolve(ROOT, 'studies/pilot-1/study.json'), 'utf8'))
+
+  it('hashes codes exactly like the backend', () => {
+    // Same reference values as backend/tests/test_study.py.
+    expect(['p01', 'syn001', 'alice-7', ''].map(fnv1a)).toEqual([723412596, 3238330556, 2566655595, 2166136261])
+  })
+
+  it('gives each code one form, warm-up tasks first, the rest shuffled but stable', () => {
+    for (const code of ['p01', 'p02', 'syn001', 'alice-7']) {
+      const form = study.forms[formFor(study, code)]
+      const order = orderFor(study, code)
+      expect(order.slice(0, study.fixed_first)).toEqual(form.slice(0, study.fixed_first))
+      expect([...order].map((t) => `${t.exercise}:${t.task}`).sort()).toEqual(form.map((t) => `${t.exercise}:${t.task}`).sort())
+      expect(orderFor(study, code)).toEqual(order)
+    }
+    expect(new Set(['p01', 'p02', 'p03', 'p04', 'p05', 'p06'].map((c) => formFor(study, c))).size).toBe(2)
+  })
+
+  it('needs every required answer and builds a bundle for the server', () => {
+    expect(missingAnswers(study.survey, {})).toContain('years')
+    const p = { ...newProgress(), consent_at: '2026-11-01T10:00:00Z', survey: { years: '2-5' } }
+    const b = buildBundle(study, 'p01', p)
+    expect(b).toMatchObject({ study_id: 'pilot-1', participant: 'p01', form: formFor(study, 'p01'), consent_at: '2026-11-01T10:00:00Z' })
+    expect(b.order).toHaveLength(study.forms[b.form].length)
   })
 })
 

@@ -1,0 +1,20 @@
+== test_p1_promo_discount_is_fully_shared_across_lines on shipped: FAIL (must fail)
+F                                                                        [100%]
+================================== FAILURES ===================================
+_____________ test_p1_promo_discount_is_fully_shared_across_lines _____________
+
+env = (<starlette.testclient.TestClient object at 0x00000220322434D0>, FakeProvider(payments={'pay_be9e248a9180': {'id': 'pa...00000220320BDBE0>), <test_gates.Clock object at 0x00000220320BDBE0>, <sqlite3.Connection object at 0x00000220322A22F0>)
+
+    def test_p1_promo_discount_is_fully_shared_across_lines(env):
+        """Finance: some promo orders are a few cents off in reconciliation."""
+        client, provider, clock, conn = env
+        oid = order(client, ["itm_bao", "itm_rolls", "itm_soup"], promo="SAVE10")
+        o = client.get(f"/orders/{oid}", headers=ALICE).json()
+>       assert sum(l["discount"] for l in o["lines"]) == o["discount"]
+E       assert 102 == 101
+E        +  where 102 = sum(<generator object test_p1_promo_discount_is_fully_shared_across_lines.<locals>.<genexpr> at 0x00000220322DE8E0>)
+
+internal\verification\test_gates.py:92: AssertionError
+=========================== short test summary info ===========================
+FAILED internal\verification\test_gates.py::test_p1_promo_discount_is_fully_shared_across_lines
+1 failed in 0.61s

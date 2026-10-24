@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "id": "readcode-011",
+  "version": 1,
+  "scoring": {
+    "total": 100,
+    "sections": {
+      "comprehension": 0,
+      "bugs": 100,
+      "design": 0,
+      "improvements": 0
+    }
+  },
+  "comprehension": [],
+  "design": [],
+  "improvements": {
+    "weight": 0,
+    "expected_themes": []
+  },
+  "red_herrings": [],
+  "bugs": [
+    {
+      "id": "B1",
+      "title": "A late payment event overwrites 'refunded'",
+      "severity": "critical",
+      "category": "state",
+      "weight": 100,
+      "skills": [
+        "state-machine",
+        "idempotency"
+      ],
+      "locations": [
+        {
+          "file": "market/payments.py",
+          "function": "_set_payment_status",
+          "start_line": 33,
+          "end_line": 38
+        }
+      ],
+      "description": "_set_payment_status only skips an event that repeats the current status. The provider does not guarantee delivery order: when refund.succeeded arrives before payment.succeeded (the customer cancelled while the payment was still processing), the late payment.succeeded moves the order from refunded back to paid, and the restaurant and customer are told it is a new paid order.",
+      "mechanism_anchors": [
+        "events can arrive out of order",
+        "the check only compares with the current status",
+        "refunded is overwritten by paid",
+        "new_order and payment_confirmed are sent for a cancelled, refunded order",
+        "deduplication by event id does not help: these are different events"
+      ],
+      "fix": "Only let the payment status move forward (pending -> paid/failed -> refunded) and ignore events that would move it back."
+    }
+  ],
+  "grader_instructions": [
+    "Task-only marketplace problem. 'where' is graded by line overlap (within 3 lines) with the planted lines; 'why' and 'fix' are multiple choice."
+  ],
+  "tasks": [
+    {
+      "task_id": "T1",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B1"
+      ],
+      "part_answers": {
+        "why": "b",
+        "fix": "d"
+      },
+      "part_locations": {
+        "where": [
+          {
+            "file": "market/payments.py",
+            "start_line": 35,
+            "end_line": 35
+          }
+        ]
+      },
+      "part_weights": {
+        "where": 40,
+        "why": 40,
+        "fix": 20
+      },
+      "distractors": {
+        "why.a": "events are deduplicated by their id; a redelivery is ignored",
+        "why.c": "the order is marked cancelled in a transaction before the refund is requested",
+        "why.d": "cancel refunds the full total",
+        "fix.a": "the order still flips back to paid: reports and the customer's email stay wrong",
+        "fix.b": "a refund event for the same payment would then be dropped",
+        "fix.c": "waiting does not make delivery ordered; a retry can come minutes or hours later"
+      }
+    }
+  ]
+}

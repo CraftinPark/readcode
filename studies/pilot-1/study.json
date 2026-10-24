@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "pilot-1",
+  "title": "ReadCode pilot: finding problems in code you didn't write",
+  "estimated_minutes": 75,
+  "consent": [
+    "This is a research pilot for ReadCode, a tool for practising and measuring how well people find problems in unfamiliar code. It takes about 60 to 90 minutes in one sitting.",
+    "We record your answers, how long each task takes, and the background answers you give next. We do not record your name or email with your answers; your participant code is the only link.",
+    "Your results are never used to make a hiring decision about you, and are only reported as group statistics. You can stop at any time, and you can ask us to delete your answers using your participant code.",
+    "Please do not use AI assistants or web search during the tasks. At the end we will ask whether you did; answering honestly does not affect anything."
+  ],
+  "survey": [
+    {"id": "years", "label": "Years working as a software engineer (not counting internships)", "type": "choice", "required": true,
+     "options": ["0-1", "2-5", "6-10", "10+"]},
+    {"id": "level", "label": "Your current level", "type": "choice", "required": true,
+     "options": ["student or intern", "new grad / junior", "mid", "senior", "staff or above", "not working as an engineer"]},
+    {"id": "title", "label": "Your job title (optional)", "type": "text", "required": false},
+    {"id": "on_call", "label": "Have you been on call for a production service?", "type": "choice", "required": true,
+     "options": ["yes", "no"]},
+    {"id": "python", "label": "How comfortable are you reading Python? (1 = barely, 5 = daily)", "type": "choice", "required": true,
+     "options": ["1", "2", "3", "4", "5"]},
+    {"id": "seen_saleor", "label": "Have you worked on the Saleor codebase?", "type": "choice", "required": true,
+     "options": ["yes", "no", "not sure"]},
+    {"id": "company_type", "label": "Where do you work?", "type": "choice", "required": true,
+     "options": ["large tech company", "startup", "other company", "student", "other"]}
+  ],
+  "honesty": [
+    {"id": "used_ai", "label": "Did you use an AI assistant (ChatGPT, Claude, Copilot...) during any task?", "type": "choice", "required": true,
+     "options": ["no", "yes"]},
+    {"id": "used_search", "label": "Did you search the web for any task?", "type": "choice", "required": true,
+     "options": ["no", "yes"]},
+    {"id": "interrupted", "label": "Were you interrupted or did you take a long break during a task?", "type": "choice", "required": true,
+     "options": ["no", "yes"]},
+    {"id": "comments", "label": "Anything that was confusing or felt unfair? (optional)", "type": "text", "required": false}
+  ],
+  "fixed_first": 3,
+  "forms": {
+    "A": [
+      {"exercise": "readcode-005", "task": "T1"},
+      {"exercise": "readcode-002", "task": "T5"},
+      {"exercise": "readcode-006", "task": "T1"},
+      {"exercise": "readcode-010", "task": "T1"},
+      {"exercise": "readcode-007", "task": "T1"},
+      {"exercise": "readcode-011", "task": "T1"}
+    ],
+    "B": [
+      {"exercise": "readcode-005", "task": "T1"},
+      {"exercise": "readcode-003", "task": "T7"},
+      {"exercise": "readcode-004", "task": "T1"},
+      {"exercise": "readcode-008", "task": "T1"},
+      {"exercise": "readcode-009", "task": "T1"}
+    ]
+  }
+}

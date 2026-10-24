@@ -1,0 +1,24 @@
+== test_p5_a_late_payment_event_does_not_revive_a_refunded_order on shipped: FAIL (must fail)
+F                                                                        [100%]
+================================== FAILURES ===================================
+________ test_p5_a_late_payment_event_does_not_revive_a_refunded_order ________
+
+env = (<starlette.testclient.TestClient object at 0x00000203449A34D0>, FakeProvider(payments={'pay_63ca7810a815': {'id': 'pa...0000020344821BE0>), <test_gates.Clock object at 0x0000020344821BE0>, <sqlite3.Connection object at 0x0000020344A023E0>)
+
+    def test_p5_a_late_payment_event_does_not_revive_a_refunded_order(env):
+        """Restaurant: we cooked an order the customer had cancelled and been refunded for."""
+        client, provider, clock, conn = env
+        oid = order(client, ["itm_noodles"])               # payment still processing
+        assert client.post(f"/orders/{oid}/cancel", headers=ALICE).status_code == 200
+        deliver(client, provider, kinds=["refund.succeeded", "payment.succeeded"])   # provider delivers out of order
+        o = client.get(f"/orders/{oid}", headers=ALICE).json()
+>       assert o["payment_status"] == "refunded"
+E       AssertionError: assert 'paid' == 'refunded'
+E         
+E         - refunded
+E         + paid
+
+internal\verification\test_gates.py:142: AssertionError
+=========================== short test summary info ===========================
+FAILED internal\verification\test_gates.py::test_p5_a_late_payment_event_does_not_revive_a_refunded_order
+1 failed in 0.61s

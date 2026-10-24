@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "id": "readcode-009",
+  "version": 1,
+  "scoring": {
+    "total": 100,
+    "sections": {
+      "comprehension": 0,
+      "bugs": 100,
+      "design": 0,
+      "improvements": 0
+    }
+  },
+  "comprehension": [],
+  "design": [],
+  "improvements": {
+    "weight": 0,
+    "expected_themes": []
+  },
+  "red_herrings": [],
+  "bugs": [
+    {
+      "id": "B1",
+      "title": "Refunds still pending at payout time are never deducted",
+      "severity": "high",
+      "category": "money",
+      "weight": 100,
+      "skills": [
+        "money-invariants",
+        "state-machine"
+      ],
+      "locations": [
+        {
+          "file": "market/payouts.py",
+          "function": "preview",
+          "start_line": 17,
+          "end_line": 30
+        }
+      ],
+      "description": "payouts.preview deducts only refunds that have settled. Refunds stay pending until the provider's refund.succeeded event, often days later. A refund created before a payout run but settled after it is skipped by that payout, and the next payout only looks at refunds created after its start, so the refund is never deducted and the platform pays for it.",
+      "mechanism_anchors": [
+        "only succeeded refunds are deducted",
+        "refunds stay pending until the provider confirms",
+        "each refund belongs to one period by created time",
+        "a refund pending at payout time falls between two periods"
+      ],
+      "fix": "Deduct refunds that are pending or succeeded (anything the customer has been promised)."
+    }
+  ],
+  "grader_instructions": [
+    "Task-only marketplace problem. 'where' is graded by line overlap (within 3 lines) with the planted lines; 'why' and 'fix' are multiple choice."
+  ],
+  "tasks": [
+    {
+      "task_id": "T1",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B1"
+      ],
+      "part_answers": {
+        "why": "a",
+        "fix": "c"
+      },
+      "part_locations": {
+        "where": [
+          {
+            "file": "market/payouts.py",
+            "start_line": 25,
+            "end_line": 25
+          }
+        ]
+      },
+      "part_weights": {
+        "where": 40,
+        "why": 40,
+        "fix": 20
+      },
+      "distractors": {
+        "why.b": "missing-item refunds happen after delivery",
+        "why.c": "commission is the platform's cut, a few cents, not the full item",
+        "why.d": "events are deduplicated by id",
+        "fix.a": "provider refunds can take longer than two days; the gap moves, it does not close",
+        "fix.b": "a refund weeks after the order would land in an already paid period and be lost",
+        "fix.d": "cancelled orders were never paid out, so deducting their refunds takes money the restaurant never got"
+      }
+    }
+  ]
+}

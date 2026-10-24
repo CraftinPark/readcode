@@ -18,11 +18,13 @@ export interface TaskOption {
   diff?: string           // a candidate fix ("which change fixes it?")
 }
 
-// A multiple-choice part of a task, e.g. where / why / fix. Graded exactly.
+// A part of a task, e.g. where / why / fix. Either multiple choice (options) or
+// answered by selecting lines in the code (select). Both are graded exactly.
 export interface TaskPart {
   id: string
   prompt: string
-  options: TaskOption[]
+  options?: TaskOption[]
+  select?: 'lines'
 }
 
 // An incident ticket, a PR to review, or a trace question.
@@ -71,7 +73,7 @@ export interface PublicExercise extends Omit<ExerciseSummary, 'line_count'> {
   license: { spdx: string; attribution: string }
   questions: { id: string; text: string }[]
   design_prompts: { id: string; text: string }[]
-  playground?: { kind: 'backend-console'; presets: PlaygroundPreset[] }
+  playground?: { kind: 'backend-console'; engine?: string; presets: PlaygroundPreset[] }
 }
 
 export type CommentType = 'bug' | 'question' | 'design' | 'improvement'

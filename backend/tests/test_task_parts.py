@@ -55,3 +55,30 @@ def test_confidence_is_no_longer_accepted():
     sub = {**submission("readcode-004", key_answers("readcode-004")), "confidence": "certain"}
     with pytest.raises(TaskError):
         grade_task(ROOT / "examples" / "readcode-004", sub, FakeJudge())
+
+
+# ---- marketplace problems: "where" is answered by selecting lines
+
+MARKET = ["readcode-007", "readcode-008", "readcode-009", "readcode-010", "readcode-011"]
+
+
+def answer_lines(ex):
+    key = json.loads((ROOT / "examples" / ex / "key.json").read_text(encoding="utf-8"))
+    return key["tasks"][0]["part_locations"]["where"]
+
+
+@pytest.mark.parametrize("ex", MARKET)
+def test_selecting_the_planted_lines_and_right_options_scores_100(ex):
+    sub = {**submission(ex, key_answers(ex)), "locations": answer_lines(ex)}
+    r = grade_task(ROOT / "examples" / ex, sub, FakeJudge())
+    assert r["score"] == 100, r
+
+
+@pytest.mark.parametrize("ex", MARKET)
+def test_lines_in_the_wrong_place_lose_the_where_points(ex):
+    right = answer_lines(ex)[0]
+    elsewhere = {"file": "market/db.py", "start_line": 10, "end_line": 12}
+    nearby = {**right, "start_line": right["start_line"] + 2, "end_line": right["start_line"] + 2}
+    for locs, expected in (([elsewhere], 0), ([nearby], 40), ([], 0)):
+        r = grade_task(ROOT / "examples" / ex, {**submission(ex, key_answers(ex)), "locations": locs}, FakeJudge())
+        assert r["parts"]["where"] == expected, (ex, locs, r)

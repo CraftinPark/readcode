@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "id": "readcode-008",
+  "version": 1,
+  "title": "Orders before opening time",
+  "language": "python",
+  "difficulty": "hard",
+  "track": "payments-infra",
+  "area": "payments-core",
+  "rung": 4,
+  "topics": [
+    "api",
+    "payments",
+    "multi-tenant"
+  ],
+  "estimated_minutes": 20,
+  "files": [
+    {
+      "path": "README.md",
+      "line_count": 32
+    },
+    {
+      "path": "market/app.py",
+      "line_count": 155
+    },
+    {
+      "path": "market/orders.py",
+      "line_count": 86
+    },
+    {
+      "path": "market/pricing.py",
+      "line_count": 47
+    },
+    {
+      "path": "market/payments.py",
+      "line_count": 83
+    },
+    {
+      "path": "market/dispatch.py",
+      "line_count": 41
+    },
+    {
+      "path": "market/payouts.py",
+      "line_count": 46
+    },
+    {
+      "path": "market/catalog.py",
+      "line_count": 53
+    },
+    {
+      "path": "market/money.py",
+      "line_count": 26
+    },
+    {
+      "path": "market/providers.py",
+      "line_count": 49
+    },
+    {
+      "path": "market/db.py",
+      "line_count": 147
+    },
+    {
+      "path": "market/seed.py",
+      "line_count": 33
+    },
+    {
+      "path": "market/__init__.py",
+      "line_count": 1
+    },
+    {
+      "path": "tests/test_smoke.py",
+      "line_count": 84
+    },
+    {
+      "path": "pytest.ini",
+      "line_count": 3
+    }
+  ],
+  "license": {
+    "spdx": "LicenseRef-ReadCode-Original",
+    "attribution": "Written for ReadCode. Not affiliated with any delivery company."
+  },
+  "questions": [],
+  "design_prompts": [],
+  "playground": {
+    "kind": "backend-console",
+    "engine": "market",
+    "presets": [
+      {
+        "label": "Order: noodles",
+        "method": "POST",
+        "path": "/orders",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "items": [
+            {
+              "item_id": "itm_noodles"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Order: 3 small plates + SAVE10",
+        "method": "POST",
+        "path": "/orders",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "promo_code": "SAVE10",
+          "items": [
+            {
+              "item_id": "itm_bao"
+            },
+            {
+              "item_id": "itm_rolls"
+            },
+            {
+              "item_id": "itm_soup"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Quote a cart",
+        "method": "POST",
+        "path": "/quote",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "promo_code": "SAVE10",
+          "items": [
+            {
+              "item_id": "itm_dumplings"
+            },
+            {
+              "item_id": "itm_bao"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Restaurants open now",
+        "method": "GET",
+        "path": "/restaurants?open_now=true",
+        "headers": {}
+      },
+      {
+        "label": "Cancel order (edit id)",
+        "method": "POST",
+        "path": "/orders/ORDER_ID/cancel",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        }
+      },
+      {
+        "label": "Staff: accept (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/accept",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: dispatch (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/dispatch",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: picked up (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/picked_up",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: delivered (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/delivered",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: refund 3.35 (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/refund",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        },
+        "body": {
+          "amount": 335
+        }
+      },
+      {
+        "label": "Staff: run payouts",
+        "method": "POST",
+        "path": "/admin/payouts/run",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: reconciliation",
+        "method": "GET",
+        "path": "/admin/reconciliation",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: couriers",
+        "method": "GET",
+        "path": "/admin/couriers",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": "T1",
+      "type": "incident",
+      "text": "Dragon Noodle House (Toronto), Tuesday: \"Since Sunday we've been getting orders around 10:00, but we open at 11:00, and we have to cancel them. Customers also tell us the app shows us closed from about 21:00, though we close at 22:00. Nothing changed on our side.\" Find the cause.",
+      "parts": [
+        {
+          "id": "where",
+          "prompt": "Where is the cause? Select the lines in the code (any file).",
+          "select": "lines"
+        },
+        {
+          "id": "why",
+          "prompt": "Why does that produce what they see?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Opening hours that run past midnight are handled wrongly, which shifts the window."
+            },
+            {
+              "id": "b",
+              "text": "is_open uses < at closing time, so the last minutes count as closed."
+            },
+            {
+              "id": "c",
+              "text": "Local time is computed from the UTC offset saved when the restaurant signed up in summer. Since the clocks went back, Toronto is an hour further behind UTC, so the app thinks it is an hour later than it is."
+            },
+            {
+              "id": "d",
+              "text": "The server's clock runs in UTC and the hours are compared as UTC."
+            }
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "Which change fixes it?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Convert with the restaurant's time zone",
+              "diff": "--- a/market/catalog.py\n+++ b/market/catalog.py\n@@\n+from zoneinfo import ZoneInfo\n@@ local_time\n-    return now_utc + timedelta(minutes=restaurant[\"utc_offset_minutes\"])\n+    return now_utc.astimezone(ZoneInfo(restaurant[\"timezone\"]))\n"
+            },
+            {
+              "id": "b",
+              "text": "Update every restaurant's saved offset",
+              "diff": "--- /dev/null\n+++ b/migrations/0007_fix_offsets.sql\n+UPDATE restaurants SET utc_offset_minutes = utc_offset_minutes - 60;\n"
+            },
+            {
+              "id": "c",
+              "text": "Subtract an hour in winter",
+              "diff": "--- a/market/catalog.py\n+++ b/market/catalog.py\n@@ local_time\n-    return now_utc + timedelta(minutes=restaurant[\"utc_offset_minutes\"])\n+    winter = now_utc.month in (11, 12, 1, 2, 3)\n+    return now_utc + timedelta(minutes=restaurant[\"utc_offset_minutes\"] - (60 if winter else 0))\n"
+            },
+            {
+              "id": "d",
+              "text": "Store opening hours in UTC",
+              "diff": "--- a/market/catalog.py\n+++ b/market/catalog.py\n@@ is_open\n-    t = local_time(restaurant, now_s).time()\n+    t = datetime.fromtimestamp(now_s, timezone.utc).time()   # opens_at/closes_at migrated to UTC\n"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

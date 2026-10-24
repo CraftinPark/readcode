@@ -54,6 +54,12 @@ def sync(examples, out):
             "in_mvp": track.get("in_mvp", True), "tasks": pub.get("tasks", []),
             "has_review": bool(pub["questions"] or pub["design_prompts"])})
     (out / "index.json").write_text(json.dumps(index, indent=2))
+    # Study definitions hold no answers (tasks, consent, survey), so the study page can load them.
+    studies_out = out.parent / "studies"
+    shutil.rmtree(studies_out, ignore_errors=True)
+    for s in sorted((ROOT / "studies").glob("*/study.json")):
+        (studies_out / s.parent.name).mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(s, studies_out / s.parent.name / "study.json")
     return index
 
 

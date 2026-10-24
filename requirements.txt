@@ -5,3 +5,4 @@ pytest
 fastapi
 httpx
 uvicorn
+tzdata

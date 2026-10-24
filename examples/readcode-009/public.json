@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "id": "readcode-009",
+  "version": 1,
+  "title": "Restaurants paid for refunded items",
+  "language": "python",
+  "difficulty": "hard",
+  "track": "payments-infra",
+  "area": "billing-revenue",
+  "rung": 4,
+  "topics": [
+    "api",
+    "payments",
+    "multi-tenant"
+  ],
+  "estimated_minutes": 25,
+  "files": [
+    {
+      "path": "README.md",
+      "line_count": 32
+    },
+    {
+      "path": "market/app.py",
+      "line_count": 155
+    },
+    {
+      "path": "market/orders.py",
+      "line_count": 86
+    },
+    {
+      "path": "market/pricing.py",
+      "line_count": 47
+    },
+    {
+      "path": "market/payments.py",
+      "line_count": 83
+    },
+    {
+      "path": "market/dispatch.py",
+      "line_count": 41
+    },
+    {
+      "path": "market/payouts.py",
+      "line_count": 46
+    },
+    {
+      "path": "market/catalog.py",
+      "line_count": 54
+    },
+    {
+      "path": "market/money.py",
+      "line_count": 26
+    },
+    {
+      "path": "market/providers.py",
+      "line_count": 49
+    },
+    {
+      "path": "market/db.py",
+      "line_count": 147
+    },
+    {
+      "path": "market/seed.py",
+      "line_count": 33
+    },
+    {
+      "path": "market/__init__.py",
+      "line_count": 1
+    },
+    {
+      "path": "tests/test_smoke.py",
+      "line_count": 84
+    },
+    {
+      "path": "pytest.ini",
+      "line_count": 3
+    }
+  ],
+  "license": {
+    "spdx": "LicenseRef-ReadCode-Original",
+    "attribution": "Written for ReadCode. Not affiliated with any delivery company."
+  },
+  "questions": [],
+  "design_prompts": [],
+  "playground": {
+    "kind": "backend-console",
+    "engine": "market",
+    "presets": [
+      {
+        "label": "Order: noodles",
+        "method": "POST",
+        "path": "/orders",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "items": [
+            {
+              "item_id": "itm_noodles"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Order: 3 small plates + SAVE10",
+        "method": "POST",
+        "path": "/orders",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "promo_code": "SAVE10",
+          "items": [
+            {
+              "item_id": "itm_bao"
+            },
+            {
+              "item_id": "itm_rolls"
+            },
+            {
+              "item_id": "itm_soup"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Quote a cart",
+        "method": "POST",
+        "path": "/quote",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "promo_code": "SAVE10",
+          "items": [
+            {
+              "item_id": "itm_dumplings"
+            },
+            {
+              "item_id": "itm_bao"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Restaurants open now",
+        "method": "GET",
+        "path": "/restaurants?open_now=true",
+        "headers": {}
+      },
+      {
+        "label": "Cancel order (edit id)",
+        "method": "POST",
+        "path": "/orders/ORDER_ID/cancel",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        }
+      },
+      {
+        "label": "Staff: accept (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/accept",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: dispatch (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/dispatch",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: picked up (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/picked_up",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: delivered (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/delivered",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: refund 3.35 (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/refund",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        },
+        "body": {
+          "amount": 335
+        }
+      },
+      {
+        "label": "Staff: run payouts",
+        "method": "POST",
+        "path": "/admin/payouts/run",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: reconciliation",
+        "method": "GET",
+        "path": "/admin/reconciliation",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: couriers",
+        "method": "GET",
+        "path": "/admin/couriers",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": "T1",
+      "type": "incident",
+      "text": "Finance team: \"Audit of October: for 11 missing-item refunds the restaurant was still paid in full for the item, so we covered the refund ourselves. The refunds were issued normally and later settled with the provider. Other refunds that month were deducted correctly. Payouts run every Wednesday morning; most of the 11 were issued Monday to Wednesday.\" Find the cause.",
+      "parts": [
+        {
+          "id": "where",
+          "prompt": "Where is the cause? Select the lines in the code (any file).",
+          "select": "lines"
+        },
+        {
+          "id": "why",
+          "prompt": "Why does that produce what they see?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Payouts deduct only refunds that have settled. A refund still pending when the payout runs is skipped, and the next payout only covers refunds created after its start, so it is never deducted."
+            },
+            {
+              "id": "b",
+              "text": "Refunds on orders that are not delivered are excluded, and these orders were refunded before delivery."
+            },
+            {
+              "id": "c",
+              "text": "Commission is taken from gross before refunds, so the restaurant keeps the commission on refunded items."
+            },
+            {
+              "id": "d",
+              "text": "The refund.succeeded event is processed twice and cancels the deduction."
+            }
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "Which change fixes it?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Run payouts on Friday instead of Wednesday",
+              "diff": "--- a/ops/schedule.yaml\n+++ b/ops/schedule.yaml\n-  payouts: \"0 6 * * WED\"\n+  payouts: \"0 6 * * FRI\"\n"
+            },
+            {
+              "id": "b",
+              "text": "Match refunds to the period by the order's date",
+              "diff": "--- a/market/payouts.py\n+++ b/market/payouts.py\n@@ preview\n-        \"AND r.created_ms > ? AND r.created_ms <= ?\",\n+        \"AND o.created_ms > ? AND o.created_ms <= ?\",\n"
+            },
+            {
+              "id": "c",
+              "text": "Deduct refunds that are pending or settled",
+              "diff": "--- a/market/payouts.py\n+++ b/market/payouts.py\n@@ preview\n-        \"WHERE o.restaurant_id = ? AND o.status = 'delivered' AND r.status = 'succeeded' \"\n+        \"WHERE o.restaurant_id = ? AND o.status = 'delivered' AND r.status IN ('pending', 'succeeded') \"\n"
+            },
+            {
+              "id": "d",
+              "text": "Also deduct refunds on cancelled orders",
+              "diff": "--- a/market/payouts.py\n+++ b/market/payouts.py\n@@ preview\n-        \"WHERE o.restaurant_id = ? AND o.status = 'delivered' AND r.status = 'succeeded' \"\n+        \"WHERE o.restaurant_id = ? AND o.status IN ('delivered', 'cancelled') AND r.status = 'succeeded' \"\n"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

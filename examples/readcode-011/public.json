@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "id": "readcode-011",
+  "version": 1,
+  "title": "A cancelled order got cooked",
+  "language": "python",
+  "difficulty": "hard",
+  "track": "payments-infra",
+  "area": "payments-core",
+  "rung": 4,
+  "topics": [
+    "api",
+    "payments",
+    "multi-tenant"
+  ],
+  "estimated_minutes": 25,
+  "files": [
+    {
+      "path": "README.md",
+      "line_count": 32
+    },
+    {
+      "path": "market/app.py",
+      "line_count": 155
+    },
+    {
+      "path": "market/orders.py",
+      "line_count": 86
+    },
+    {
+      "path": "market/pricing.py",
+      "line_count": 47
+    },
+    {
+      "path": "market/payments.py",
+      "line_count": 79
+    },
+    {
+      "path": "market/dispatch.py",
+      "line_count": 41
+    },
+    {
+      "path": "market/payouts.py",
+      "line_count": 46
+    },
+    {
+      "path": "market/catalog.py",
+      "line_count": 54
+    },
+    {
+      "path": "market/money.py",
+      "line_count": 26
+    },
+    {
+      "path": "market/providers.py",
+      "line_count": 49
+    },
+    {
+      "path": "market/db.py",
+      "line_count": 147
+    },
+    {
+      "path": "market/seed.py",
+      "line_count": 33
+    },
+    {
+      "path": "market/__init__.py",
+      "line_count": 1
+    },
+    {
+      "path": "tests/test_smoke.py",
+      "line_count": 84
+    },
+    {
+      "path": "pytest.ini",
+      "line_count": 3
+    }
+  ],
+  "license": {
+    "spdx": "LicenseRef-ReadCode-Original",
+    "attribution": "Written for ReadCode. Not affiliated with any delivery company."
+  },
+  "questions": [],
+  "design_prompts": [],
+  "playground": {
+    "kind": "backend-console",
+    "engine": "market",
+    "presets": [
+      {
+        "label": "Order: noodles",
+        "method": "POST",
+        "path": "/orders",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "items": [
+            {
+              "item_id": "itm_noodles"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Order: 3 small plates + SAVE10",
+        "method": "POST",
+        "path": "/orders",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "promo_code": "SAVE10",
+          "items": [
+            {
+              "item_id": "itm_bao"
+            },
+            {
+              "item_id": "itm_rolls"
+            },
+            {
+              "item_id": "itm_soup"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Quote a cart",
+        "method": "POST",
+        "path": "/quote",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        },
+        "body": {
+          "restaurant_id": "res_dragon",
+          "promo_code": "SAVE10",
+          "items": [
+            {
+              "item_id": "itm_dumplings"
+            },
+            {
+              "item_id": "itm_bao"
+            }
+          ]
+        }
+      },
+      {
+        "label": "Restaurants open now",
+        "method": "GET",
+        "path": "/restaurants?open_now=true",
+        "headers": {}
+      },
+      {
+        "label": "Cancel order (edit id)",
+        "method": "POST",
+        "path": "/orders/ORDER_ID/cancel",
+        "headers": {
+          "Authorization": "Bearer sk_alice"
+        }
+      },
+      {
+        "label": "Staff: accept (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/accept",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: dispatch (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/dispatch",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: picked up (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/picked_up",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: delivered (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/delivered",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: refund 3.35 (edit id)",
+        "method": "POST",
+        "path": "/admin/orders/ORDER_ID/refund",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        },
+        "body": {
+          "amount": 335
+        }
+      },
+      {
+        "label": "Staff: run payouts",
+        "method": "POST",
+        "path": "/admin/payouts/run",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: reconciliation",
+        "method": "GET",
+        "path": "/admin/reconciliation",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      },
+      {
+        "label": "Staff: couriers",
+        "method": "GET",
+        "path": "/admin/couriers",
+        "headers": {
+          "Authorization": "Bearer sk_admin_ops"
+        }
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": "T1",
+      "type": "incident",
+      "text": "Dragon Noodle House: \"Yesterday at 18:40 a customer's order sat at 'payment processing', so they cancelled it and got a refund. About twenty minutes later our tablet showed it as a new paid order, so we cooked it. The customer also got a 'payment confirmed' email after their refund.\" Find the cause.",
+      "parts": [
+        {
+          "id": "where",
+          "prompt": "Where is the cause? Select the lines in the code (any file).",
+          "select": "lines"
+        },
+        {
+          "id": "why",
+          "prompt": "Why does that produce what they see?",
+          "options": [
+            {
+              "id": "a",
+              "text": "The provider sent payment.succeeded twice and the second copy was processed again."
+            },
+            {
+              "id": "b",
+              "text": "The provider delivered payment.succeeded after refund.succeeded. The status check only skips an event that repeats the current status, so 'paid' overwrote 'refunded' and the new-order messages went out."
+            },
+            {
+              "id": "c",
+              "text": "cancel() asks for the refund before marking the order cancelled, so for a moment the order looked live."
+            },
+            {
+              "id": "d",
+              "text": "The refund was smaller than the order total, so the order stayed payable."
+            }
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "Which change fixes it?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Don't notify the restaurant about cancelled orders",
+              "diff": "--- a/market/payments.py\n+++ b/market/payments.py\n@@ handle_event\n-            if new == \"paid\":\n+            if new == \"paid\" and order[\"status\"] != \"cancelled\":\n"
+            },
+            {
+              "id": "b",
+              "text": "Deduplicate events by payment id",
+              "diff": "--- a/market/payments.py\n+++ b/market/payments.py\n@@ handle_event\n-        if conn.execute(\"SELECT 1 FROM provider_events WHERE id = ?\", (event[\"id\"],)).fetchone():\n+        if conn.execute(\"SELECT 1 FROM provider_events WHERE id = ?\", (event[\"data\"][\"payment_id\"],)).fetchone():\n"
+            },
+            {
+              "id": "c",
+              "text": "Sort events by their created time before processing",
+              "diff": "--- a/market/app.py\n+++ b/market/app.py\n@@ provider_webhook\n-    def provider_webhook(event: dict):\n+    def provider_webhook(event: dict):\n+        time.sleep(5)  # let earlier events arrive first\n"
+            },
+            {
+              "id": "d",
+              "text": "Only let the payment status move forward",
+              "diff": "--- a/market/payments.py\n+++ b/market/payments.py\n@@\n+RANK = {\"pending\": 0, \"failed\": 1, \"paid\": 1, \"refunded\": 2}\n@@ _set_payment_status\n-    if new == current:\n+    if RANK[new] <= RANK[current]:\n         return False\n"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

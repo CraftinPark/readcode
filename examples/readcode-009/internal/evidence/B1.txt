@@ -1,0 +1,29 @@
+== test_p3_refunds_pending_at_payout_time_are_deducted on shipped: FAIL (must fail)
+F                                                                        [100%]
+================================== FAILURES ===================================
+_____________ test_p3_refunds_pending_at_payout_time_are_deducted _____________
+
+env = (<starlette.testclient.TestClient object at 0x0000029A979234D0>, FakeProvider(payments={'pay_80e815695850': {'id': 'pa...0000029A9779DBE0>), <test_gates.Clock object at 0x0000029A9779DBE0>, <sqlite3.Connection object at 0x0000029A979822F0>)
+
+    def test_p3_refunds_pending_at_payout_time_are_deducted(env):
+        """Finance: restaurants were paid in full for items we refunded to customers."""
+        client, provider, clock, conn = env
+        oid = order(client, ["itm_noodles", "itm_bao"])
+        deliver(client, provider)
+        staff(client, oid, "accept", "dispatch", "picked_up", "delivered")
+        clock.t += 6 * DAY
+        assert client.post(f"/admin/orders/{oid}/refund", headers=STAFF, json={"amount": 335}).status_code == 200
+        clock.t += 1 * DAY                                 # the weekly payout runs before the provider confirms
+        (week1,) = client.post("/admin/payouts/run", headers=STAFF).json()
+        clock.t += 1 * DAY
+        deliver(client, provider)                          # refund.succeeded arrives
+        clock.t += 6 * DAY
+        later = client.post("/admin/payouts/run", headers=STAFF).json()
+>       assert week1["refunds"] + sum(p["refunds"] for p in later) == 335
+E       assert (0 + 0) == 335
+E        +  where 0 = sum(<generator object test_p3_refunds_pending_at_payout_time_are_deducted.<locals>.<genexpr> at 0x0000029A979BEA80>)
+
+internal\verification\test_gates.py:119: AssertionError
+=========================== short test summary info ===========================
+FAILED internal\verification\test_gates.py::test_p3_refunds_pending_at_payout_time_are_deducted
+1 failed in 0.63s

@@ -1,0 +1,24 @@
+== test_p4_cancelling_an_assigned_order_frees_the_courier on shipped: FAIL (must fail)
+F                                                                        [100%]
+================================== FAILURES ===================================
+___________ test_p4_cancelling_an_assigned_order_frees_the_courier ____________
+
+env = (<starlette.testclient.TestClient object at 0x000001EB7F7B34D0>, FakeProvider(payments={'pay_d8f32bcf369c': {'id': 'pa...000001EB7F631BE0>), <test_gates.Clock object at 0x000001EB7F631BE0>, <sqlite3.Connection object at 0x000001EB7F8122F0>)
+
+    def test_p4_cancelling_an_assigned_order_frees_the_courier(env):
+        """Dispatch: through the evening fewer and fewer couriers are available."""
+        client, provider, clock, conn = env
+        for _ in range(2):
+            oid = order(client, ["itm_noodles"])
+            deliver(client, provider)
+            staff(client, oid, "accept", "dispatch")
+            assert client.post(f"/orders/{oid}/cancel", headers=ALICE).status_code == 200
+        couriers = client.get("/admin/couriers", headers=STAFF).json()
+>       assert all(c["active_jobs"] == 0 for c in couriers["all"])
+E       assert False
+E        +  where False = all(<generator object test_p4_cancelling_an_assigned_order_frees_the_courier.<locals>.<genexpr> at 0x000001EB7F84ECF0>)
+
+internal\verification\test_gates.py:131: AssertionError
+=========================== short test summary info ===========================
+FAILED internal\verification\test_gates.py::test_p4_cancelling_an_assigned_order_frees_the_courier
+1 failed in 0.64s

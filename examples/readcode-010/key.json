@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "id": "readcode-010",
+  "version": 1,
+  "scoring": {
+    "total": 100,
+    "sections": {
+      "comprehension": 0,
+      "bugs": 100,
+      "design": 0,
+      "improvements": 0
+    }
+  },
+  "comprehension": [],
+  "design": [],
+  "improvements": {
+    "weight": 0,
+    "expected_themes": []
+  },
+  "red_herrings": [],
+  "bugs": [
+    {
+      "id": "B1",
+      "title": "Cancelling an assigned order keeps the courier busy",
+      "severity": "high",
+      "category": "state",
+      "weight": 100,
+      "skills": [
+        "state-machine"
+      ],
+      "locations": [
+        {
+          "file": "market/orders.py",
+          "function": "cancel",
+          "start_line": 74,
+          "end_line": 86
+        }
+      ],
+      "description": "orders.cancel gives the courier their slot back only if the order was already picked up. Most cancellations happen after a courier is assigned but before pickup; each one leaves a phantom job in couriers.active_jobs. After two, the courier is never offered work again.",
+      "mechanism_anchors": [
+        "active_jobs is a counter kept on the courier row",
+        "assigned but not picked up orders are not released on cancel",
+        "phantom jobs accumulate through the day",
+        "MAX_ACTIVE_JOBS makes a courier unavailable after two"
+      ],
+      "fix": "Release the courier when cancelling an assigned or picked-up order."
+    }
+  ],
+  "grader_instructions": [
+    "Task-only marketplace problem. 'where' is graded by line overlap (within 3 lines) with the planted lines; 'why' and 'fix' are multiple choice."
+  ],
+  "tasks": [
+    {
+      "task_id": "T1",
+      "type": "incident",
+      "answer_bug_ids": [
+        "B1"
+      ],
+      "part_answers": {
+        "why": "d",
+        "fix": "b"
+      },
+      "part_locations": {
+        "where": [
+          {
+            "file": "market/orders.py",
+            "start_line": 80,
+            "end_line": 80
+          }
+        ]
+      },
+      "part_weights": {
+        "where": 40,
+        "why": 40,
+        "fix": 20
+      },
+      "distractors": {
+        "why.a": "the couriers in the ticket have no jobs at all",
+        "why.b": "assign() orders by active_jobs first, then id",
+        "why.c": "the floor at zero only stops the counter going negative; it cannot raise it",
+        "fix.a": "the phantom jobs keep piling up; the failures start later instead of never",
+        "fix.c": "the evening still breaks; the counter is only right again the next morning",
+        "fix.d": "unlinks the order but never decrements the courier's counter"
+      }
+    }
+  ]
+}

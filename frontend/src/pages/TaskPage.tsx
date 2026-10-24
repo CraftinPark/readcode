@@ -38,15 +38,26 @@ export default function TaskPage({ id, taskId }: { id: string; taskId: string })
   return <TaskWorkspace key={`${id}:${loaded.ex.version}:${taskId}`} ex={loaded.ex} files={loaded.files} task={task} />
 }
 
-function TaskWorkspace({ ex, files, task }: { ex: PublicExercise; files: CodeFile[]; task: PublicTask }) {
+// In a study: answers are kept per participant, the header shows progress
+// instead of links out, and submitting hands the submission to the study
+// (no score or answer is shown until the end).
+export interface StudyMode {
+  scope: string
+  candidateId: string
+  progress: string
+  onSubmit: (sub: TaskSubmission) => void
+}
+
+export function TaskWorkspace({ ex, files, task, study }: { ex: PublicExercise; files: CodeFile[]; task: PublicTask; study?: StudyMode }) {
   // A PR review opens the file the diff changes; everything else opens the main file.
   const [path, setPath] = useState(() => {
     const changed = /^\+\+\+ b\/(.+)$/m.exec(task.diff ?? '')?.[1]
     return files.some((f) => f.path === changed) ? changed! : primaryFile(ex, files).path
   })
   const file = files.find((f) => f.path === path) ?? files[0]
-  const [answer, setAnswer] = useState<TaskAnswer>(() => loadTaskAnswer(ex.id, ex.version, task.id) ?? emptyTaskAnswer())
-  useEffect(() => saveTaskAnswer(ex.id, ex.version, task.id, answer), [answer, ex, task])
+  const scope = study?.scope ?? ''
+  const [answer, setAnswer] = useState<TaskAnswer>(() => loadTaskAnswer(ex.id, ex.version, task.id, scope) ?? emptyTaskAnswer())
+  useEffect(() => saveTaskAnswer(ex.id, ex.version, task.id, answer, scope), [answer, ex, task, scope])
   const [topLine, setTopLine] = useState(1)
   const [query, setQuery] = useState('')
   const [hitIdx, setHitIdx] = useState(0)
@@ -80,15 +91,16 @@ function TaskWorkspace({ ex, files, task }: { ex: PublicExercise; files: CodeFil
   const activeHit = hits.length ? hits[Math.min(hitIdx, hits.length - 1)] : null
   useEffect(() => { if (activeHit != null) jump(activeHit) }, [query])
 
-  // Multiple-choice tasks are answered in the panel; selecting lines only matters for text tasks.
+  // Selecting lines answers text tasks and "select the lines" parts; pure multiple choice ignores it.
+  const selectsLines = !task.parts || task.parts.some((p) => p.select === 'lines')
   const onSelect = useCallback((start: number, end: number) => {
-    if (task.parts) return
+    if (!selectsLines) return
     setAnswer((a) => ({ ...a, ranges: [...a.ranges, { file: path, start_line: start, end_line: end }] }))
-  }, [path, task])
+  }, [path, selectsLines])
   const removeRange = (i: number) => setAnswer((a) => ({ ...a, ranges: a.ranges.filter((_, j) => j !== i) }))
 
   const chosen = useMemo(() => (task.parts ?? []).flatMap((part) =>
-    part.options.filter((o) => o.id === answer.answers[part.id] && o.location).map((o) => o.location!)), [task, answer.answers])
+    (part.options ?? []).filter((o) => o.id === answer.answers[part.id] && o.location).map((o) => o.location!)), [task, answer.answers])
   const marks = useMemo(() => {
     const m = new Map<number, LineMark>()
     for (const r of [...answer.ranges, ...chosen]) if (r.file === path) for (let n = r.start_line; n <= r.end_line; n++) m.set(n, 'saved')
@@ -97,8 +109,10 @@ function TaskWorkspace({ ex, files, task }: { ex: PublicExercise; files: CodeFil
   const fileList = files.map((f) => ({ path: f.path, comments: answer.ranges.filter((r) => r.file === f.path).length }))
 
   const submit = () => {
-    setSubmitted(buildTaskSubmission(ex, task, answer, CANDIDATE_ID))
-    clearTaskAnswer(ex.id, ex.version, task.id)
+    const sub = buildTaskSubmission(ex, task, answer, study?.candidateId ?? CANDIDATE_ID)
+    clearTaskAnswer(ex.id, ex.version, task.id, scope)
+    if (study) study.onSubmit(sub)
+    else setSubmitted(sub)
   }
   if (submitted) return <TaskSubmitted sub={submitted} ex={ex} task={task} />
 
@@ -113,12 +127,14 @@ function TaskWorkspace({ ex, files, task }: { ex: PublicExercise; files: CodeFil
           <span className="truncate text-xs text-muted">{ex.title} · {files.length} file{files.length === 1 ? '' : 's'}</span>
         </div>
         <div className="flex-1" />
-        <a href="#/exercises" className="text-xs text-muted hover:text-ink">All exercises</a>
+        {study
+          ? <span className="text-xs font-medium text-muted">{study.progress}</span>
+          : <a href="#/exercises" className="text-xs text-muted hover:text-ink">All exercises</a>}
         <Timer startedAt={answer.startedAt} minutes={MINUTES[task.type]} />
         <button type="button" disabled={!ready} onClick={submit}
           title={ready ? undefined : 'Answer every required part first'}
           className="h-9 rounded-lg bg-accent px-4 font-semibold text-white hover:bg-[#1a44bd] disabled:opacity-40">
-          Submit
+          {study ? 'Submit and continue' : 'Submit'}
         </button>
       </header>
       <div className="flex min-h-0 flex-1">
@@ -160,7 +176,7 @@ function TaskWorkspace({ ex, files, task }: { ex: PublicExercise; files: CodeFil
           <div className="flex flex-col gap-5 p-5">
             <TaskBrief task={task} />
             {task.parts
-              ? <PartsForm parts={task.parts} answers={answer.answers} onJump={jump}
+              ? <PartsForm parts={task.parts} answers={answer.answers} ranges={answer.ranges} onJump={jump} onRemove={removeRange}
                   onPick={(part, opt) => setAnswer((a) => ({ ...a, answers: { ...a.answers, [part]: opt } }))} />
               : <AnswerForm task={task} answer={answer} setAnswer={setAnswer} onJump={jump} onRemove={removeRange} />}
           </div>
@@ -275,7 +291,7 @@ function AnswerForm({ task, answer, setAnswer, onJump, onRemove }: {
       <label>
         <span className={label}>
           {task.type === 'incident' ? 'What is going wrong, and why does it cause what the customer sees?'
-            : task.type === 'review_pr' ? 'Why? What did you check?' : 'Explain how you got there'}
+            : task.type === 'review_pr' ? 'Why? What did you check?' : 'Explain how you got there (optional)'}
         </span>
         <textarea className={`${field} h-[130px]`} value={answer.explanation} onChange={(e) => set({ explanation: e.target.value })} />
       </label>
@@ -290,19 +306,40 @@ function AnswerForm({ task, answer, setAnswer, onJump, onRemove }: {
 }
 
 // SAT style: every part is a pick from fixed options, so grading needs no judge.
-function PartsForm({ parts, answers, onPick, onJump }: {
+function PartsForm({ parts, answers, ranges, onPick, onJump, onRemove }: {
   parts: TaskPart[]
   answers: Record<string, string>
+  ranges: Range[]
   onPick: (part: string, option: string) => void
   onJump: (line: number, file?: string) => void
+  onRemove: (i: number) => void
 }) {
   return (
     <div className="flex flex-col gap-5 border-t border-line pt-5">
       {parts.map((part, i) => (
         <fieldset key={part.id}>
           <legend className="mb-2 text-[13px] font-semibold">{i + 1}. {part.prompt}</legend>
+          {part.select === 'lines' && (
+            <>
+              <p className="mb-2 text-xs leading-[1.45] text-muted">Drag across line numbers in the code to select. You can select in more than one file.</p>
+              {ranges.length === 0
+                ? <div className="rounded-lg border border-dashed border-line-strong px-3 py-2.5 text-xs text-muted">No lines selected yet.</div>
+                : (
+                  <div className="flex flex-col gap-1">
+                    {ranges.map((r, j) => (
+                      <div key={j} className="flex items-center justify-between rounded-lg bg-accent-soft px-2.5 py-1.5 text-xs">
+                        <button type="button" onClick={() => onJump(r.start_line, r.file)} className="font-mono hover:underline">
+                          {r.file} · {formatRanges([r])}
+                        </button>
+                        <button type="button" aria-label="Remove location" onClick={() => onRemove(j)} className="px-1 text-muted hover:text-ink">×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+            </>
+          )}
           <div className="flex flex-col gap-1.5">
-            {part.options.map((o) => {
+            {(part.options ?? []).map((o) => {
               const picked = answers[part.id] === o.id
               return (
                 <label key={o.id} className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 text-[13px] leading-[1.45] ${picked ? 'border-accent bg-accent-soft' : 'border-line-strong hover:border-ink'}`}>

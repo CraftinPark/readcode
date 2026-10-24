@@ -122,6 +122,8 @@
         "distractors": {"type": "object", "additionalProperties": {"type": "string"}, "description": "option id (or part.option for parts) -> the misread it is built from"},
         "part_answers": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "pattern": "^[a-z]$"},
                          "description": "part id -> correct option id, for tasks with multiple-choice parts"},
+        "part_locations": {"type": "object", "additionalProperties": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/range"}},
+                           "description": "part id -> the lines that answer it, for parts answered by selecting lines"},
         "part_weights": {"type": "object", "additionalProperties": {"type": "number", "exclusiveMinimum": 0},
                          "description": "part id -> points; must sum to 100"}
       },

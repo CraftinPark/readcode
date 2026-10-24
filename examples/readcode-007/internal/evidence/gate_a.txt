@@ -1,0 +1,19 @@
+== t0 on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.63s
+
+== test_p1_promo_discount_is_fully_shared_across_lines on baseline: PASS
+.                                                                        [100%]
+1 passed in 0.49s
+
+== t0 on shipped (must pass: the bug only shows in its scenario): PASS
+.                                                                        [100%]
+1 passed in 0.60s
+
+== smoke tests on baseline: PASS
+.....                                                                    [100%]
+5 passed in 0.94s
+
+== smoke tests on shipped (the candidate's own tests pass): PASS
+.....                                                                    [100%]
+5 passed in 0.77s

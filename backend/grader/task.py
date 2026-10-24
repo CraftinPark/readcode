@@ -4,7 +4,7 @@ Deterministic parts are decided here: did the candidate point at the cause,
 pick the right verdict, pick the right option. Only the written explanation
 and fix go to the judge (judge_task), which scores them 0..1.
 
-    parts      each multiple-choice part's weight   (exact; used when the key has part_answers)
+    parts      each part's weight (exact): multiple choice, or selected lines within 3 lines of the answer
     incident   locate 40 + mechanism 40 + fix 20   (mechanism and fix count only if located)
     review_pr  verdict 50 + reasons 50              (reasons count only with the right verdict)
     trace      option 100                           (a wrong option reports the misread it is built on)
@@ -51,6 +51,13 @@ def grade_task(example_dir, sub, judge):
         # that option was built on, never the right answer.
         chosen = sub.get("answers", {})
         misreads = []
+        # Line parts: right if any selected range is within 3 lines of the answer, in the same file.
+        for pid, ranges in ktask.get("part_locations", {}).items():
+            hit = any(_near(c, k, tol=3) for c in sub["locations"] for k in ranges)
+            parts[pid] = float(ktask["part_weights"][pid]) if hit else 0.0
+            if not hit:
+                misreads.append(f"{pid}: " + ("the cause is not in the lines you selected; follow the symptom back through the code"
+                                              if sub["locations"] else "no lines selected"))
         for pid, right in ktask["part_answers"].items():
             ok = chosen.get(pid) == right
             parts[pid] = float(ktask["part_weights"][pid]) if ok else 0.0
