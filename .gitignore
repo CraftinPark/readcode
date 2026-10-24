@@ -4,3 +4,4 @@ __pycache__/
 frontend/public/exercises/
 *.zip
 backend/.data/
+frontend/public/studies/
