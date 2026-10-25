@@ -38,6 +38,19 @@ from the recording start, plus `info.txt` (guild, channel, start time, tracks) a
    decision so they can be checked. Mark anything you inferred rather than heard.
    Decisions that change a row in CLAUDE.md section 2 must be confirmed with the user
    before editing CLAUDE.md.
+6. **Post to Discord.** Preview first (prints the message, sends nothing):
+   ```bash
+   python -I .claude/skills/transcribe-meeting/scripts/post_discord.py docs/meetings/<date>-notes.md docs/meetings/<date>-transcript.md
+   ```
+   Show the user that preview and post only after they say yes in chat, by rerunning with
+   `--send`. The whole team reads it, and the notes contain guesses (who's who, inferred
+   decisions). The message is the "Decided" and "Action items" sections (max 2000 chars),
+   with the notes and transcript attached; `@` mentions are disabled.
+   The webhook URL is read from the `READCODE_DISCORD_WEBHOOK` environment variable. Never
+   write it into the repo, a command line that gets logged, or the notes. If it's unset, ask
+   the user to set it (Discord: channel settings > Integrations > Webhooks > New Webhook > Copy URL).
+   On Windows, `setx` only reaches shells started afterwards; if the session doesn't see it, read
+   it for one command from `[Environment]::GetEnvironmentVariable('READCODE_DISCORD_WEBHOOK','User')`.
 
 ## Notes
 
