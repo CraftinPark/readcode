@@ -19,6 +19,8 @@ export interface Study {
   consent: string[]
   survey: StudyQuestion[]
   honesty: StudyQuestion[]
+  end_title?: string   // heading and intro for the closing questions (defaults suit the pilot)
+  end_intro?: string
   fixed_first: number
   forms: Record<string, { exercise: string; task: string }[]>
 }

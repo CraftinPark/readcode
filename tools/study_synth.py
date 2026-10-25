@@ -63,6 +63,17 @@ def answer(rng, pub, t, k, ability, minutes_est, bad_parts):
     return sub
 
 
+def fill(rng, questions, known):
+    """Answers for a study's questions: known values where the study asks for them, else a random option."""
+    out = {}
+    for q in questions:
+        if q["id"] in known:
+            out[q["id"]] = known[q["id"]]
+        elif q["type"] == "choice" and q.get("required"):
+            out[q["id"]] = rng.choice(q["options"])
+    return out
+
+
 def make(study_id, out, per_level=15, seed=1, bad_items=()):
     rng = random.Random(seed)
     study = load_study(study_id)
@@ -83,9 +94,11 @@ def make(study_id, out, per_level=15, seed=1, bad_items=()):
                       "order": [f"{e['exercise']}:{e['task']}" for e in study["forms"][form]],
                       "consent_at": "2026-11-01T11:00:00Z", "started_at": "2026-11-01T11:00:00Z",
                       "finished_at": "2026-11-01T12:20:00Z",
-                      "survey": {"years": years, "level": LEVEL_FOR_YEARS[years], "on_call": "yes" if years != "0-1" else "no",
-                                 "python": str(rng.choice([3, 4, 5])), "seen_saleor": "no", "company_type": "other company"},
-                      "honesty": {"used_ai": "yes" if rng.random() < 0.05 else "no", "used_search": "no", "interrupted": "no"},
+                      "survey": fill(rng, study["survey"], {
+                          "years": years, "level": LEVEL_FOR_YEARS[years], "on_call": "yes" if years != "0-1" else "no",
+                          "python": str(rng.choice([3, 4, 5])), "seen_saleor": "no", "company_type": "other company"}),
+                      "honesty": fill(rng, study["honesty"], {
+                          "used_ai": "yes" if rng.random() < 0.05 else "no", "used_search": "no", "interrupted": "no"}),
                       "tasks": tasks}
             (out / f"{code}.json").write_text(json.dumps(bundle, indent=2), encoding="utf-8")
     return n

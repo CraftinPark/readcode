@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "id": "value-1",
+  "title": "ReadCode: try finding problems in code you didn't write",
+  "estimated_minutes": 60,
+  "consent": [
+    "ReadCode is a practice tool for the interview rounds where you read, debug or review code someone else wrote. We are testing an early version with people who are looking for a job, and want to know whether it is worth building. It takes about an hour.",
+    "You will work through five tasks on a small payments API and a food-delivery backend, from a warm-up to a hard one. The last one is optional in spirit: do your best and move on if you are stuck.",
+    "We record your answers, how long each task takes, and the questions you answer before and after. We do not record your name or email with your answers; your participant code is the only link. You can stop at any time, and ask us to delete your answers using your code.",
+    "Please do not use AI assistants or web search during the tasks. At the end we ask whether you did; answering honestly does not affect anything."
+  ],
+  "survey": [
+    {"id": "job_search", "label": "Are you looking for a software engineering job right now?", "type": "choice", "required": true,
+     "options": ["yes, actively interviewing", "yes, about to start", "no"]},
+    {"id": "years", "label": "Years working as a software engineer (not counting internships)", "type": "choice", "required": true,
+     "options": ["0-1", "2-5", "6-10", "10+"]},
+    {"id": "level", "label": "Your current level", "type": "choice", "required": true,
+     "options": ["student or intern", "new grad / junior", "mid", "senior", "staff or above", "not working as an engineer"]},
+    {"id": "python", "label": "How comfortable are you reading Python? (1 = barely, 5 = daily)", "type": "choice", "required": true,
+     "options": ["1", "2", "3", "4", "5"]},
+    {"id": "had_reading_round", "label": "In the last 12 months, did an interview ask you to read, explain, debug or review code you didn't write?", "type": "choice", "required": true,
+     "options": ["yes", "no", "not sure", "no interviews yet"]},
+    {"id": "reading_round_where", "label": "If yes: which company or companies, and what did the round look like? (optional)", "type": "text", "required": false},
+    {"id": "prep", "label": "What do you mostly use to prepare for interviews?", "type": "choice", "required": true,
+     "options": ["LeetCode or similar", "AI assistants", "courses or books", "mock interviews", "nothing yet", "other"]}
+  ],
+  "end_title": "Last questions",
+  "end_intro": "Honest answers help us most, including \"not useful\". None of this affects you.",
+  "honesty": [
+    {"id": "if_gone", "label": "How would you feel if you could no longer use ReadCode?", "type": "choice", "required": true,
+     "options": ["very disappointed", "somewhat disappointed", "not disappointed (it isn't really useful)"]},
+    {"id": "use_again", "label": "Would you use ReadCode to prepare for your next interview?", "type": "choice", "required": true,
+     "options": ["yes", "maybe", "no"]},
+    {"id": "felt_real", "label": "Did the tasks feel like real engineering work?", "type": "choice", "required": true,
+     "options": ["yes", "somewhat", "no"]},
+    {"id": "difficulty", "label": "How hard were the tasks overall?", "type": "choice", "required": true,
+     "options": ["too easy", "about right", "too hard"]},
+    {"id": "main_benefit", "label": "What is the main thing you got out of it? (optional)", "type": "text", "required": false},
+    {"id": "used_ai", "label": "Did you use an AI assistant (ChatGPT, Claude, Copilot...) during any task?", "type": "choice", "required": true,
+     "options": ["no", "yes"]},
+    {"id": "used_search", "label": "Did you search the web for any task?", "type": "choice", "required": true,
+     "options": ["no", "yes"]},
+    {"id": "comments", "label": "Anything that was confusing or felt unfair? (optional)", "type": "text", "required": false}
+  ],
+  "fixed_first": 5,
+  "forms": {
+    "A": [
+      {"exercise": "readcode-002", "task": "T5"},
+      {"exercise": "readcode-003", "task": "T7"},
+      {"exercise": "readcode-010", "task": "T1"},
+      {"exercise": "readcode-007", "task": "T1"},
+      {"exercise": "readcode-011", "task": "T1"}
+    ]
+  }
+}

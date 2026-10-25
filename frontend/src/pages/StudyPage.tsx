@@ -86,7 +86,8 @@ function Session({ study, code }: { study: Study; code: string }) {
 
   if (p.stage === 'honesty') {
     return (
-      <Questions title="Last questions" intro="Answering honestly does not change anything for you; it tells us which results to trust."
+      <Questions title={study.end_title ?? 'Last questions'}
+        intro={study.end_intro ?? 'Answering honestly does not change anything for you; it tells us which results to trust.'}
         questions={study.honesty} answers={p.honesty} onAnswer={(id, v) => setP((x) => ({ ...x, honesty: { ...x.honesty, [id]: v } }))}
         next="Finish and see my results" onNext={() => update({ stage: 'submitting' })} />
     )

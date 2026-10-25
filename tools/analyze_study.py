@@ -173,6 +173,20 @@ def analyze(study, people, excluded):
                          "questions that separate": f"{sum(1 for r in items if r['separation'] >= 0.1)} of {len(items)}"}}
 
 
+def answer_counts(study, bundles):
+    """Share of people picking each option, for every choice question (everyone, excluded or not)."""
+    out = []
+    for where in ("survey", "honesty"):
+        for q in study[where]:
+            if q["type"] != "choice":
+                continue
+            c = Counter(b[where].get(q["id"]) for b in bundles if b[where].get(q["id"]))
+            n = sum(c.values())
+            out.append({"id": q["id"], "label": q["label"], "n": n,
+                        "shares": [(o, c[o] / n if n else None) for o in q["options"]]})
+    return out
+
+
 def fmt(x, pct=False):
     if x is None:
         return "-"
@@ -205,6 +219,9 @@ def report_md(study, a):
     flagged = [r for r in a["items"] if r["flags"]]
     lines += ["", "## Drop or rewrite", ""] + ([f"- {r['item']}: {', '.join(r['flags'])}" for r in flagged] or ["- none"])
     lines += ["", "## Very fast perfect answers (check these)", ""] + ([f"- {x}" for x in a["fast"]] or ["- none"])
+    lines += ["", "## Answers to the questions before and after", ""]
+    for q in a.get("answers", []):
+        lines.append(f"- {q['label']} (n = {q['n']}): " + ", ".join(f"{o} {fmt(s, True)}" for o, s in q["shares"]))
     lines += ["", "_With about 15 people per group only large differences show up. This is first evidence, not proof._", ""]
     return "\n".join(lines)
 
@@ -218,8 +235,11 @@ def main():
     ap.add_argument("--out")
     a = ap.parse_args()
     study = load_study(a.study)
-    people, excluded = score_people(study, load_bundles(a.study, a.bundles, a.db))
-    text = report_md(study, analyze(study, people, excluded))
+    bundles = load_bundles(a.study, a.bundles, a.db)
+    people, excluded = score_people(study, bundles)
+    result = analyze(study, people, excluded)
+    result["answers"] = answer_counts(study, bundles)
+    text = report_md(study, result)
     if a.out:
         Path(a.out).write_text(text, encoding="utf-8")
         print(f"wrote {a.out}")

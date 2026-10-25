@@ -61,6 +61,30 @@ def test_alpha_and_spearman_on_known_values():
     assert analysis.spearman([1, 2, 3, 4], [4, 3, 2, 1]) == pytest.approx(-1.0)
 
 
+@pytest.mark.parametrize("study_id", sorted(p.name for p in (ROOT / "studies").iterdir() if (p / "study.json").is_file()))
+def test_every_study_lists_real_tasks_graded_without_a_judge(study_id):
+    study = load_study(study_id)
+    assert study["id"] == study_id and 0 <= study["fixed_first"] <= min(len(f) for f in study["forms"].values())
+    for form in study["forms"].values():
+        for entry in form:
+            pub = json.loads((ROOT / "examples" / entry["exercise"] / "public.json").read_text(encoding="utf-8"))
+            task = next(t for t in pub["tasks"] if t["id"] == entry["task"])
+            assert task.get("parts") or task.get("options"), f"{entry} needs a written answer, which needs a real judge"
+
+
+def test_value_study_end_to_end(tmp_path, monkeypatch):
+    synth.make("value-1", tmp_path / "b", per_level=2, seed=1)
+    value = load_study("value-1")
+    sent = [json.loads(p.read_text(encoding="utf-8")) for p in sorted((tmp_path / "b").glob("*.json"))]
+    client = TestClient(create_playground_app(Store(tmp_path / "study.db")))
+    assert all(client.post("/api/study/value-1/submissions", json=b).status_code == 200 for b in sent)
+    shares = {q["id"]: dict(q["shares"]) for q in analysis.answer_counts(value, sent)}
+    assert sum(shares["if_gone"].values()) == pytest.approx(1.0)
+    a = analysis.analyze(value, *analysis.score_people(value, sent))
+    a["answers"] = analysis.answer_counts(value, sent)
+    assert "How would you feel if you could no longer use ReadCode?" in analysis.report_md(value, a)
+
+
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("READCODE_STUDY_ADMIN_KEY", "organiser")
