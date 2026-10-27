@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReadCode: no copy-paste mode</title>
+<style>
+  :root { --bg: #fbfaf7; --panel: #f1efe9; --ink: #1d1c1a; --muted: #6b6860; --line: #dcd8ce; --accent: #2f5d8a; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1b1a18; --panel: #24221f; --ink: #ebe8e1; --muted: #9a958a; --line: #3a3732; --accent: #86b2dc; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--ink); display: grid; grid-template-columns: 240px 1fr 320px; height: 100vh; }
+  nav, aside { background: var(--panel); overflow: auto; padding: 12px; border-right: 1px solid var(--line); }
+  aside { border-right: 0; border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+  nav button { display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--ink); padding: 3px 6px; font: 12px ui-monospace, monospace; cursor: pointer; border-radius: 4px; }
+  nav button.open { background: var(--line); }
+  main { overflow: auto; }
+  #code { margin: 0; padding: 12px 0; font: 13px/1.5 ui-monospace, monospace; user-select: none; -webkit-user-select: none; }
+  #code div { white-space: pre; padding: 0 16px; }
+  #code span { display: inline-block; width: 3.5em; color: var(--muted); text-align: right; margin-right: 1em; }
+  h1 { font-size: 13px; margin: 0 0 8px; }
+  textarea { width: 100%; min-height: 90px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: inherit; }
+  .note { color: var(--muted); font-size: 12px; }
+  #log { font: 11px ui-monospace, monospace; color: var(--muted); white-space: pre-wrap; flex: 1; overflow: auto; }
+  aside button { background: var(--accent); color: var(--bg); border: 0; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+  @media (max-width: 800px) { body { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: auto; } nav, aside { border: 0; } }
+</style>
+</head>
+<body>
+<nav><h1 id="title">Files</h1><div id="tree"></div></nav>
+<main><pre id="code"></pre></main>
+<aside>
+  <h1>Ask the AI (type it yourself)</h1>
+  <p class="note">Copy, cut, paste, drag and right-click are off in this mode. The AI only sees what you type, so you decide where to look and what to ask.</p>
+  <textarea id="ask" placeholder="e.g. In Python, is a threading.Lock shared between processes?"></textarea>
+  <button id="send">Log question</button>
+  <p class="note">MVP: questions are logged, not sent. The real version calls the model with exactly this text.</p>
+  <h1>Your trail</h1>
+  <div id="log"></div>
+  <button id="export">Download trail (JSON)</button>
+</aside>
+<script src="bundle.js"></script>
+<script>
+  const start = Date.now();
+  const trail = [];
+  const logEl = document.getElementById("log");
+  function record(kind, detail) {
+    const t = ((Date.now() - start) / 1000).toFixed(1);
+    trail.push({ t: Number(t), kind, detail });
+    logEl.textContent = trail.map(e => `${e.t}s ${e.kind} ${e.detail}`).join("\n");
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  const B = window.BUNDLE || { name: "no bundle.js (run build_bundle.py)", files: {} };
+  document.getElementById("title").textContent = B.name;
+  const tree = document.getElementById("tree");
+  const code = document.getElementById("code");
+  const paths = Object.keys(B.files).sort((a, b) => (a === "README.md" ? -1 : b === "README.md" ? 1 : a.localeCompare(b)));
+  for (const p of paths) {
+    const b = document.createElement("button");
+    b.textContent = p;
+    b.onclick = () => open(p, b);
+    tree.appendChild(b);
+  }
+  function open(p, btn) {
+    tree.querySelectorAll("button").forEach(x => x.classList.toggle("open", x === btn));
+    code.replaceChildren(...B.files[p].split("\n").map((line, i) => {
+      const d = document.createElement("div");
+      const n = document.createElement("span");
+      n.textContent = i + 1;
+      d.append(n, line);
+      return d;
+    }));
+    record("open", p);
+  }
+  if (paths.length) open(paths[0], tree.firstChild);
+
+  // No copy-paste: block it everywhere, and count attempts (they are part of the trail).
+  for (const ev of ["copy", "cut", "paste", "dragstart", "drop", "contextmenu"]) {
+    document.addEventListener(ev, e => { e.preventDefault(); record("blocked", ev); }, true);
+  }
+
+  const ask = document.getElementById("ask");
+  document.getElementById("send").onclick = () => {
+    if (ask.value.trim()) { record("ask", JSON.stringify(ask.value.trim())); ask.value = ""; }
+  };
+  document.getElementById("export").onclick = () => {
+    const blob = new Blob([JSON.stringify({ problem: B.name, trail }, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "trail.json";
+    a.click();
+  };
+</script>
+</body>
+</html>
