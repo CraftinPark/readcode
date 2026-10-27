@@ -42,11 +42,13 @@ def bullets(lines: list[str], keep: int | None = None) -> list[str]:
             continue
         if all(re.fullmatch(r":?-+:?", c) for c in cells):
             continue
+        # Keep a "#" column as the bullet's number so "see #5" still points somewhere.
+        marker = "-"
         if cells and cells[0].isdigit():
-            cells = cells[1:]
+            marker, cells = f"{cells[0]}.", cells[1:]
         cells = [c for c in cells[:keep] if c]
         if cells:
-            out.append("- " + " · ".join(cells))
+            out.append(f"{marker} " + " · ".join(cells))
     return out
 
 
