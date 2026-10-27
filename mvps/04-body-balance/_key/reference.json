@@ -1,0 +1,8 @@
+{
+  "heart_capacity": 120,
+  "vessel_queue": 100,
+  "timeout_ticks": 2,
+  "retry_limit": 1,
+  "liver_cache": 200,
+  "autoscale_threshold": 25
+}
