@@ -25,3 +25,7 @@ The encoder chip's count register is 16 bit. The firmware takes `enc - last` wit
 ## Not done
 
 A real video (render the frames to a GIF/MP4, which is the part AI is weakest at), scoring that rewards fewer probes, a reverse-direction run (the hack also breaks it), the C port, gating against Claude.
+
+## Gate result (2026-10-27): fails the gate, AI solves it
+
+Opus 5.5, 3 fresh runs, each in a clean copy (no `_key/`, physics shipped only as compiled `plant.pyc`): **3 of 3 solved**. Each found the 16-bit wrap and unwrapped it; all hold for a 1-hour run (worst error 0.7 deg). Probes used: 1, 1 and 2 of 3, all on `enc_raw` first. Run time 48-54 s each. The keyhole was not narrow enough: "only long jobs" plus a runaway at a fixed time points straight at a counter overflow, and the firmware comment says "QEI, 16 bit". To make it harder: remove that comment, make the symptom intermittent (wrap time depending on job speed), and give a real video instead of a text replay.

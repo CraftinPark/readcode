@@ -25,3 +25,7 @@ The cause is easy (a new `request_id` per tap defeats the dedupe). The trap is t
 - `python _key/check_key.py` proves the replay separates them (shipped and in-memory fail, durable passes).
 
 Not done: gate it against Claude (3 fresh runs), a real Kubernetes replay (restarts and latency are simulated with subprocesses and an env var here).
+
+## Gate result (2026-10-27): fails the gate, AI solves it
+
+Opus 5.5, 3 fresh runs, each in a clean copy (no `_key/`, no `replay.py`): **3 of 3 solved**, all 5/5 on the hidden replay. Every run went straight to the durable fix (idempotency key per order, sent to the provider) and tested it across separate pod processes on its own; none tried the in-memory trap. Run time 32-53 s each. So this is Tier 1 at most. The README's line "every request can land on a different pod, and pods restart" probably gives the trap away; a harder variant would leave that for the player to discover.
