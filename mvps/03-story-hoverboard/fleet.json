@@ -1,0 +1,8 @@
+[
+  {"unit": "P9-01", "imu_firmware": "3.2"},
+  {"unit": "P9-02", "imu_firmware": "3.6"},
+  {"unit": "P9-03", "imu_firmware": "3.10"},
+  {"unit": "P9-04", "imu_firmware": "3.9"},
+  {"unit": "P9-05", "imu_firmware": "3.10"},
+  {"unit": "P9-06", "imu_firmware": "2.8"}
+]
