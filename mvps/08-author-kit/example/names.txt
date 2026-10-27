@@ -1,0 +1,5 @@
+Acme Delivery=Delivery Co
+acmedelivery=deliveryco
+AcmePay=PayProvider
+Acme=Company
+FleetRunner=the courier app
