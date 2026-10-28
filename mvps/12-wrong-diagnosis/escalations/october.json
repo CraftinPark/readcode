@@ -1,0 +1,97 @@
+[
+ {
+  "sub": {
+   "id": 7101,
+   "customer": "lea.311@example.com",
+   "channel": "reseller",
+   "plan": "plus",
+   "plan_cents": 1900,
+   "status": "active",
+   "period_end": 1791140400,
+   "trial_end": null,
+   "meta": null
+  },
+  "event": {
+   "sub_id": 7101,
+   "type": "cancelled",
+   "effective_at": 1791122400,
+   "received_at": 1791202953
+  }
+ },
+ {
+  "sub": {
+   "id": 7138,
+   "customer": "raj.72@example.com",
+   "channel": "reseller",
+   "plan": "basic",
+   "plan_cents": 900,
+   "status": "active",
+   "period_end": 1791543600,
+   "trial_end": null,
+   "meta": null
+  },
+  "event": {
+   "sub_id": 7138,
+   "type": "cancelled",
+   "effective_at": 1791511200,
+   "received_at": 1791580075
+  }
+ },
+ {
+  "sub": {
+   "id": 7175,
+   "customer": "wen.508@example.com",
+   "channel": "reseller",
+   "plan": "pro",
+   "plan_cents": 4900,
+   "status": "active",
+   "period_end": 1791986400,
+   "trial_end": null,
+   "meta": null
+  },
+  "event": {
+   "sub_id": 7175,
+   "type": "cancelled",
+   "effective_at": 1791972000,
+   "received_at": 1792051032
+  }
+ },
+ {
+  "sub": {
+   "id": 7212,
+   "customer": "gus.19@example.com",
+   "channel": "reseller",
+   "plan": "plus",
+   "plan_cents": 1900,
+   "status": "active",
+   "period_end": 1792371600,
+   "trial_end": null,
+   "meta": null
+  },
+  "event": {
+   "sub_id": 7212,
+   "type": "cancelled",
+   "effective_at": 1792360800,
+   "received_at": 1792431054
+  }
+ },
+ {
+  "sub": {
+   "id": 7249,
+   "customer": "tia.640@example.com",
+   "channel": "reseller",
+   "plan": "basic",
+   "plan_cents": 900,
+   "status": "active",
+   "period_end": 1792839600,
+   "trial_end": null,
+   "meta": null
+  },
+  "event": {
+   "sub_id": 7249,
+   "type": "cancelled",
+   "effective_at": 1792810800,
+   "received_at": 1792893428
+  }
+ }
+]
