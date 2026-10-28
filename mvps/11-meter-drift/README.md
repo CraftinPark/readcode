@@ -42,3 +42,17 @@ Opus 5.5, 3 fresh runs, each in a clean copy (no `_key/`, player README only). R
 All three fixed the ticket, kept replay protection through the readings' primary key, and wrote their scratch scripts inside their own folder. None edited `data/`.
 
 What this tells us: the drift was found 3 times out of 3. It wasn't hidden from AI. The two failures are judgment failures. The model saw a slow, not-yet-harmful problem outside the ticket's scope and parked it as a follow-up, even though the README says the next six months of bills run through the fix. That is a real failure mode, and a human on-call engineer might do the same. But it means this problem tests "act on what you found" more than "find it". A wording change ("I'm closing the ticket after this, there is no follow-up") would probably flip runs 2 and 3. The pass is real but thin: with 1 of 3 solved, a rerun could come out 2 of 3 solved.
+
+## Gate rerun (2026-10-28): does not hold up, 4 of 6 runs solved
+
+Three more fresh Opus 5.5 runs, same protocol (clean copy, no `_key/`), with one change: the player README's title tag "(slow drift, aiming at Tier 2)" and the italic intro ("a trend across 8 weeks says it will be") were removed, because they hint at the answer. It isn't recorded whether runs 1-3 saw those lines. Run time 157-238 s each. All three left `data/` unchanged and kept their scratch scripts in their own folder.
+
+| Run | Replay | What it did |
+|---|---|---|
+| 4 | **140/140, solved** | Removed the skew limit; new replay protection (exact duplicates, too old after clock correction, never overwrite). Per-meter clock offset = lowest live skew over 24 h, ignored under 60 s; billing prices each interval at true UTC with pro-rata split. |
+| 5 | **140/140, solved** | Same approach, plus a cap on how fast the offset estimate may rise (120 s/day) so buffered outage packets can't push it. |
+| 6 | **140/140, solved** | Same approach; a real clock jump is adopted only after 6 agreeing packets, and readings stored meanwhile are re-timed. |
+
+All three found the fw 2.1.4 drift on their own and fixed it in billing, without being told about clocks. None deferred it this time.
+
+**Combined: 4 of 6 runs solved, so MVP 11 does not pass the gate** (Tier 2 needs at least 2 of 3 failing, and over six runs the failure rate is 2/6). The first gate's two failures were judgement calls (found the drift, parked it as a follow-up); in these three runs the model acted on it every time. Lesson: one round of 3 runs is too few to call a pass when the margin is a single run; rerun any problem that passes before counting it.
