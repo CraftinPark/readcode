@@ -57,12 +57,14 @@ All three found the fw 2.1.4 drift on their own and fixed it in billing, without
 
 **Combined: 4 of 6 runs solved, so MVP 11 does not pass the gate** (Tier 2 needs at least 2 of 3 failing, and over six runs the failure rate is 2/6). The first gate's two failures were judgement calls (found the drift, parked it as a follow-up); in these three runs the model acted on it every time. Lesson: one round of 3 runs is too few to call a pass when the margin is a single run; rerun any problem that passes before counting it.
 
-### Rerun (2026-10-28): 3 more fresh runs, same setup
+## Second gate rerun (2026-10-28): runs 7-9, 1 of 3 solved
+
+Run in parallel with the rerun above, from a different session (the same three subagent labels were reused there, so these are renumbered 7-9). Same protocol. On the hint question: the gate copies for runs 1-3 and 7-9 were made by cutting the README at "## After" and dropping its first four lines (title and italic intro), so **none of runs 1-3 or 7-9 saw the "slow drift" title or the intro**. The hint lines can't explain why runs 4-6 solved it and these didn't.
 
 | Run | Replay | What it did |
 |---|---|---|
-| 4 | 115/140, failed | Fixed the outage, found the drift, and also carried late readings into the next bill. Called the drift "the proper fix is firmware or time sync" and added a clock-offset column to monitor it. |
-| 5 | **140/140, solved** | Estimated each meter's clock offset from its last 24 live packets, moved intervals onto our clock, prorated across tariff hours, and carried late readings forward. Simulated six months to check. |
-| 6 | 115/140, failed | Found the drift ("drifting clocks mislabel intervals") and listed it under "not fixed, for follow-up". |
+| 7 | 115/140, failed | Fixed the outage, found the drift, and also carried late readings into the next bill. Said "the proper fix is firmware or time sync" and added a clock-offset column to monitor the drift. |
+| 8 | **140/140, solved** | Estimated each meter's clock offset from its last 24 live packets, moved intervals onto our clock, prorated across tariff hours, and carried late readings forward. Simulated six months to check. |
+| 9 | 115/140, failed | Found the drift ("drifting clocks mislabel intervals") and listed it under "not fixed, for follow-up". |
 
-**All 6 runs: 2 solved, 4 failed. All 6 found the drift.** Every failure has the same shape: the run names the drifting meters, works out that peak pricing will go wrong in the coming months, and hands it back as a firmware or ops follow-up. The solvers treated "the next six months of bills run through your fix" as part of the job. The pass holds up (2 of 3 failed in each batch). What it measures is consistent: owning harm that hasn't happened yet, not finding hidden evidence.
+**All 9 runs: 5 solved, 4 failed, so MVP 11 does not pass.** All 9 found the drift. Every failure has the same shape: the run names the drifting meters, works out that peak pricing will go wrong, and hands it back as a firmware or ops follow-up. Whether a run defers looks like a coin flip (batches went 1/3, 3/3, 1/3 solved), not something the problem controls. A gate built on that judgement call won't pass reliably.
