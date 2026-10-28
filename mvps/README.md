@@ -17,6 +17,7 @@ One small runnable problem per idea in the findings doc ("ReadCode: findings so 
 | 11 | Slow drift (Tier 2) | Meter clocks lose seconds a day; only an 8-week trend shows it | late-packet fix 115/140, per-packet skew 100/140, reference 140/140. Gate: **does not pass**: Opus solved 5 of 9 over three batches (1/3, 3/3, 1/3); all 9 found the drift, the 4 failures deferred it
 | 12 | Wrong diagnosis (Tier 2) | Staff engineer blames late reseller webhooks; real cause is two statuses only production has; 5 prod queries | 24 h wait 4909/5000, allow-list 4940/5000, reference 5000/5000. Gate: Opus 2/3 solved (third missed 3 by a business-rule call)
 | 13 | Latent harm, take two | Duplicate login SMS; the real threat is a shared 10k/day SMS quota the growing Tuesday campaign is about to exhaust | dedupe-only loses 7,086 codes, reference 0. Gate: Opus 3/3 solved
+| 14 | Black-box tuning (Tier 2?) | Sourceless worker pool, 3 interacting knobs, 12 noisy benchmark runs; the answer exists only as measurements | shipped and 3 tempting configs fail, reference passes. Gate: **passes, Opus 0/3** (closest p99 279 vs 250); no human solve yet
 
 `python 08-author-kit/validate_submission.py 03-story-hoverboard 04-body-balance 05-live-replay 06-gearmotor-keyhole 07-write-tests-mutation` reruns every key check.
 
