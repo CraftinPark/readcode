@@ -14,7 +14,7 @@ One small runnable problem per idea in the findings doc ("ReadCode: findings so 
 | 08 | Author kit (Kaggle pivot) | Submission validator + anonymiser | Accepts 03-07; caught 07's missing key and its own names-file leak |
 | 09 | Live replay, v2 (Tier 2) | Double charge; per-order key replays declines | Order key 4/7, per-attempt key 7/7. Gate: Opus 3/3 solved
 | 10 | Evidence hunt (Tier 2) | Refund ledger; meaning of a field depends on a header only the gateway log keeps | Shipped 4/8, tempting fixes 5/8, reference 8/8. Gate: Opus 3/3 solved
-| 11 | Slow drift (Tier 2) | Meter clocks lose seconds a day; only an 8-week trend shows it | late-packet fix 115/140, per-packet skew 100/140, reference 140/140. Gate: **passes**, Opus 1/3 solved (2 found the drift but deferred it)
+| 11 | Slow drift (Tier 2) | Meter clocks lose seconds a day; only an 8-week trend shows it | late-packet fix 115/140, per-packet skew 100/140, reference 140/140. Gate: passed at first (Opus 1/3), but a rerun with hints removed went 3/3 solved, 4/6 overall: **does not pass**
 | 12 | Wrong diagnosis (Tier 2) | Staff engineer blames late reseller webhooks; real cause is two statuses only production has; 5 prod queries | 24 h wait 4909/5000, allow-list 4940/5000, reference 5000/5000. Gate: Opus 2/3 solved (third missed 3 by a business-rule call)
 
 `python 08-author-kit/validate_submission.py 03-story-hoverboard 04-body-balance 05-live-replay 06-gearmotor-keyhole 07-write-tests-mutation` reruns every key check.
