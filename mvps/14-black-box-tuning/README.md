@@ -53,3 +53,19 @@ All three concluded that 13,000 events/s "can't be met by settings alone" and es
 What this tells us: this is the first problem where the answer exists only as measurements the player makes, and it's the first clean 0/3. Opus diagnosed each mechanism (contention, the commit cap, prefetch starvation) from single noisy runs, but it didn't plan the experiment around interactions and ran out of budget doing one-knob sweeps. Then it called the target infeasible instead of saying its search was incomplete.
 
 **Caveat before counting this as Tier 2: no human has tried it.** The feasible region is 0.2% of a fine grid and the benchmark is noisy, so it may just be too hard for anyone with 12 runs. The definition needs "AI alone fails" *and* a human (with AI) can succeed. Next step: one human solve, or a reasoning check that a planned design (estimate the lock cap from a small-batch run, the contention peak from two worker counts, then size batch and prefetch to the heap) reaches the region in 12 runs.
+
+## Is it humanly solvable? A planned strategy run against the noisy bench (2026-10-28)
+
+`_key/planned_strategy.py` writes down a 12-run plan a careful engineer could follow. It reads only what the bench prints (processed events/s, p50, p99, cpu %) and uses textbook reasoning, not the hidden formulas:
+1. **Measure capacity, don't guess it.** cpu % = load ÷ capacity, so one run measures capacity. Scan 8, 12, 16 and 20 workers (batch 50, prefetch 8, 12k) and keep the best.
+2. **Find the second bottleneck.** Batch 25 at 13k falls behind with cpu under 100%, so something else limits it. Processed ÷ 25 is the commit rate, and a batch of *b* caps out near *b* × that rate.
+3. **Spot tail spikes.** A p99 more than 6× p50 means a tail spike. Keep the in-flight size (workers × prefetch × batch) below the smallest one that spiked.
+4. **Choose and check.** Pick a batch that keeps commits under ~75% busy at 13k and the largest prefetch under the in-flight limit. Check it at 13k and at 12k, and adjust with the runs left.
+
+Each trial gets fresh bench noise and a fresh 12-run budget, and the noise-free replay grades the result. **Solved 50 of 80** (27/40 and 23/40), usually in 8–9 runs, with 12/60/8 or 16/61/6. Failures follow one pattern: the capacity peak is flat (12 and 16 workers are within the ±3% noise), and after picking 16 the plan read a cpu-bound miss as a commit-lock miss. It raised the batch, which forced prefetch down, and it ran out of runs.
+
+What this says: a planned design reaches the narrow region about 60% of the time on 12 noisy runs. Opus, tuning one knob at a time, went 0 of 3 and called the target infeasible. So the problem is solvable by method, not just by luck, and it separates planned experimenting from one-knob tuning.
+
+Caveats:
+- I wrote the plan knowing the hidden model, so its choices (which worker counts, the 6× spike rule, the 75% target) may be better than a fresh person would make.
+- This is evidence that the problem can be solved, not a human solve. A real person trying it is still the stronger test.
