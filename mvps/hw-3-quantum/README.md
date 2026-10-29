@@ -32,6 +32,16 @@ How a player finds it: run their own random circuits (they have the ideal simula
 - `_key/truth.py` prints the chip's true parameters; `python _key/check_key.py` checks shipped (fails GHZ and replay), recal_only (passes GHZ, fails replay), reference (passes both).
 - `python _key/make_player_copy.py DEST` builds the player's copy.
 
-## Gate result
+## Gate result (2026-10-28): fails the gate, AI solves it (3 of 3)
 
-Not run yet.
+Opus 5.5, 3 fresh runs, each in a clean copy (no `_key/`, player README only, `_sim` as `.pyc` without docstrings). All three hit a rate limit partway through and were resumed from where they stopped.
+
+| Run | Replay (TVD excess over oracle) | Shots | What it did |
+|---|---|---|---|
+| 1 | **pass**, -0.004 mean, worst +0.016 | 263,600 | Re-measured every field (Ramsey up to 500 ticks, pulse trains, a 16-state readout matrix, repeated-CZ Ramseys). Found both Stark terms (+0.147 on q0 from q2, -0.173 on q2 from q1) and added a `drive_xtalk` table to the compiler. Ruled out idle ZZ and CZ spectator phases. Validated on random 30-gate circuits: TVD 0.38 to 0.12. |
+| 2 | **pass**, -0.002 mean, worst +0.006 | 317,200 | Same calibration plus both Stark terms. Also a full 16x16 readout inversion. Caught its own sign error on the CZ phases with a 6-CZ check. Random-circuit TVD 0.30-0.45 to 0.09-0.17. |
+| 3 | **pass**, -0.018 mean (better than the oracle), worst +0.026 | 353,500 | Same calibration plus both Stark terms, small CZ spectator phases, and an exact optimiser (merges one-qubit runs, cancels CZ pairs). That cuts pulses by half and CZs by up to 40%, so less white noise than the oracle compiler. It characterised the white noise per CZ correctly as uncorrectable. |
+
+The Stark values the runs report (0.142-0.147 and -0.172/-0.173) are the true 0.19 and -0.14 times amp^2 at their recalibrated amplitudes (0.875 and 1.109), so the runs measured them per pulse exactly. All three kept the vendor file and logged their experiments in `lab/` or `cal/`. Run time about 1-17 minutes of active work each.
+
+What this tells us: the "hard" problem was the easiest for the AI. Every run treated "users use the whole distribution" as a requirement to test: it wrote its own random circuits, compared them with the ideal simulator, saw TVD far above what GHZ suggested, and went looking. Two of the three ran the full pulse-on-one, Ramsey-on-another crosstalk matrix as a matter of routine. The quiet clue I relied on (GHZ hides it) did nothing, because the model's default calibration practice already includes cross-checks that expose it. Quantum calibration is well documented, and the model knows the whole playbook. A keyhole only bites where the playbook itself is wrong for this device (an effect no standard experiment shows), or where the budget forces a choice between experiments.
