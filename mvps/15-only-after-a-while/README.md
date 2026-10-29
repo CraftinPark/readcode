@@ -43,7 +43,7 @@ Opus 5.5, 3 fresh runs, each in a clean copy (no `_key/`, player README only, it
 | Run | Replay | How it found the cause |
 |---|---|---|
 | 1 | **0 wrong / 367, solved** | Loaded `priced.pyc` the way `check.py` does, read `EXPIRY_ORDER` and `_catalogue_v2`, and drove `Pricing(clock=...)` with a fake clock. Fix: `Decimal(str(price)) * 100` when `source == "catalogue-v2"`, and an error for any unknown format. 55 s. |
-| 2 | **0 wrong, solved** | Same approach (it deleted its scratch scripts). It checked all 20 SKUs "at every point in time". |
+| 2 | **0 wrong, solved** | Probably the same approach: it deleted its scratch scripts, so I can't confirm, but its last message says it checked all 20 SKUs "at every point in time", which it could only do in under 2 minutes with a fake clock. |
 | 3 | **0 wrong, solved** | `scratch/inspect_.py` printed the module's constants and ran `dis.dis(p.Pricing)`; `fakeclock.py` fast-forwarded it. |
 
 No run waited in real time. All three skipped the wait: they opened the black box and fast-forwarded its clock. The design made that easy. `check.py` shows how to load the `.pyc` and build `Pricing()` in-process, and the clock is a constructor argument. A Python module loaded in-process isn't a black box. Unlike MVPs 12 and 14, where Opus left the compiled file alone, the ticket here gave it no other way in, so it read the bytecode.
