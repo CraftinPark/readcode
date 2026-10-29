@@ -19,6 +19,7 @@ One small runnable problem per idea in the findings doc ("ReadCode: findings so 
 | 13 | Latent harm, take two | Duplicate login SMS; the real threat is a shared 10k/day SMS quota the growing Tuesday campaign is about to exhaust | dedupe-only loses 7,086 codes, reference 0. Gate: Opus 3/3 solved
 | 14 | Black-box tuning (Tier 2?) | Sourceless worker pool, 3 interacting knobs, 12 noisy benchmark runs; the answer exists only as measurements | shipped and 3 tempting configs fail, reference passes. Gate: **passes, Opus 0/3** (closest p99 279 vs 250); no human solve yet
 | 15 | Only after a while | Wrong charges that appear only 10+ min after the pricing service starts (cache expiry switches pence to pounds); the service is a compiled module | 3 tempting fixes fail, reference passes. Gate: Opus 3/3 solved (it loaded the module, read its bytecode and fast-forwarded the clock) |
+| 16 | Only after a while, remote | MVP 15 with the pricing service as a separate server process: no code, no restart, no fake clock; the bug shows only after 10+ min of uptime | Gate: Opus 3/3 solved (each ran a background poller for about 10 minutes and caught the switch) |
 
 `python 08-author-kit/validate_submission.py 03-story-hoverboard 04-body-balance 05-live-replay 06-gearmotor-keyhole 07-write-tests-mutation` reruns every key check.
 
