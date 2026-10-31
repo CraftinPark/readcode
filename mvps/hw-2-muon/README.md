@@ -50,3 +50,16 @@ All three passed `run_campaign.py`. None used a fudge factor or a constant backg
 **Replay change, checked before trusting the failures.** The replay first used 2%, and at 2% all three runs fail. Before counting that, I checked whether 2% is reachable at all. With the best split of the 10 hours (about 4 h on the plateau with the source, 3 h without), the dead time comes out to about +-0.22 us. That is about +-1.5% on I0 in July, so even a perfect player would fail 2% about one time in five. That was my design flaw, not the players', so the tolerance is now 3% (a 2-sigma pass for a good plan). The fudge factor still fails at 3%. The verdict is the same either way: 2 of 3 runs fail.
 
 What this tells us: as in hw-1, discovery was not the problem. All three runs found all three hidden mechanisms, including the hold-off losses that the ticket's own check exposes only as a 4% gap. The failures were about precision under a budget: each run measured the one parameter whose error grows with temperature from a single noisy pair of runs. Only run 2 put an honest error bar on it, and it was also the only one inside 3% in July. That is a real engineering skill, planning measurements so the uncertainty is small where it matters (here, at 30 C). But it is a thinner kind of Tier 2 than "the AI can't find it". Like MVP 11's pass, a rerun could come out 2 of 3 solved. To make the pass sturdier, make the precision requirement explicit in the ticket ("the summer data must be good to 3%"), and require the player to state an uncertainty.
+
+## Human solve (2026-10-30): Roger, solved 4/4
+
+Roger solved the player copy on branch `human-solve-test` (answer on `solve_nuon`) in 80 minutes: about 75% thinking, 25% waiting on runs. He used 9.78 of the 10 telescope hours and Claude Code throughout, for understanding the physics terms, analysing run data, brainstorming and writing the code. In his words, he "consulted Claude until we came to a reasonable approach and then asked it to go ahead."
+
+His answer found all three hidden effects:
+- A delayed 35 ns. That's later than the reference 20 ns, but still inside the coincidence plateau.
+- B's effective width measured at 44.8 ns (true value 45).
+- B's dead time measured at 1.45 µs (true value 1.5), corrected per run from B's singles. He left out A's hold-off, which costs almost nothing.
+
+Replay: **4/4 quarters right**, every quarter's I0 within 0.2% and n from 1.950 to 1.997. It would also pass the original 2% bar.
+
+What this shows: this is the first problem with both halves of the Tier 2 definition. AI alone solved 1 of 3, and a person working with AI solved it at the first attempt. The AI in Roger's run was the same Claude that failed alone. The difference was a person steering which measurements to spend the budget on. Caveats: it's one person, the `.pyc` rule is on the honour system, and Roger is on the team.
