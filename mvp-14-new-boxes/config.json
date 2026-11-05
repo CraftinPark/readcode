@@ -1,1 +1,1 @@
-{"workers": 32, "batch": 50, "prefetch": 8}
+{"workers": 16, "batch": 50, "prefetch": 8}
