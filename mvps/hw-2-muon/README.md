@@ -63,3 +63,11 @@ His answer found all three hidden effects:
 Replay: **4/4 quarters right**, every quarter's I0 within 0.2% and n from 1.950 to 1.997. It would also pass the original 2% bar.
 
 What this shows: this is the first problem with both halves of the Tier 2 definition. AI alone solved 1 of 3, and a person working with AI solved it at the first attempt. The AI in Roger's run was the same Claude that failed alone. The difference was a person steering which measurements to spend the budget on. Caveats: it's one person, the `.pyc` rule is on the honour system, and Roger is on the team.
+
+## Human solve (2026-11-04): Danny, solved 4/4, plus a design flaw
+
+Danny solved it blind, in a clean clone (branch `solve/danny`, commit e372134), with an AI pair session that had no access to the answers. He used 3.5 of 10 telescope hours. His answer: A delayed 40 ns, B's window measured, a dead-time correction for each run. Replay: **4/4 quarters right**, I0 within +0.1% to +0.9%, n from 1.996 to 2.001.
+
+His feedback, which I checked and which holds: **`run_campaign.py` is a free oracle.** Each call simulates 24 telescope hours and spends none of the 10-hour budget. The player can also edit it, for example to run more angles or another hut temperature, and print as much as they like. Danny ran it several times and changed it to print more. That breaks the budget the problem rests on, and it may explain why people succeed. Both human solvers said they mostly let the AI do the work. So hw-2's pass doesn't yet show that the person added a skill. It may just show that more use of the free campaign helps.
+
+Fix before any re-gate: route the campaign through the telescope budget (it costs 24 h, more than the whole budget), or make it a fixed read-only check that prints only pass or fail. Then re-gate and re-test.

@@ -69,3 +69,14 @@ What this says: a planned design reaches the narrow region about 60% of the time
 Caveats:
 - I wrote the plan knowing the hidden model, so its choices (which worker counts, the 6× spike rule, the 75% target) may be better than a fresh person would make.
 - This is evidence that the problem can be solved, not a human solve. A real person trying it is still the stronger test.
+
+## Human attempt (2026-11-04): Danny, not resolved
+
+Danny worked blind in a clean clone (branch `solve/danny`, commit 0997ce4), with an AI pair session that had no access to the answers. He used 10 of 12 runs and reported "not resolved". His final config was 16/50/8: p99 232 ms at 12k (passes) and 426 ms at 13k (fails). That's the same config Opus gate run 2 ended on.
+
+His feedback: "it seems like it's just a guessing game … I don't have to understand the problem at all. I just have to do a rather binary search … It didn't force me to learn anything new. It could have been any numbers."
+
+What this says:
+- Human with AI so far: 0 of 1. The planned strategy's 50/80 is still the only evidence that it can be solved.
+- The critique is fair. The bench prints only throughput, p50, p99 and cpu %. So the knobs' meaning never pays off, and the problem rewards search tactics, not understanding of the system. That fails the "Learning" assumption even when it fails AI.
+- Fix to try: print the telemetry a real engineer would read, such as commit-lock wait %, GC pause time and heap in use. Understanding the system then shows the bottleneck in 1–2 runs, while blind search still runs out of budget. Also ask for a graded prediction, for example "p99 at 14k with your config", so the model is tested, not the guess.
