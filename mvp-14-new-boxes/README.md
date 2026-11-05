@@ -8,7 +8,7 @@
 >
 > Find settings that keep up with today's peak (12,000 events/s) **and** next quarter's (13,000 events/s), with p99 under 250 ms at both.
 
-The pool is `ingest/pool.py`, and its settings are in `config.json` (`workers`, `batch`, `prefetch`). The decode, enrich and commit work happens in a compiled extension owned by another team; there's no source. `python bench.py [--load N]` runs the pool on the staging cluster (same hardware as production) under replayed production traffic, using whatever is in `config.json`. **Staging is shared: you get 12 benchmark runs in total**, and like any real benchmark the numbers are noisy.
+The pool is `ingest/pool.py`, and its settings are in `config.json` (`workers`, `batch`, `prefetch`). The decode, enrich and commit work happens in a compiled extension owned by another team; there's no source. `python bench.py [--load N]` runs the pool on the staging cluster (same hardware as production) under replayed production traffic, using whatever is in `config.json`, and prints the pool's telemetry: throughput, latency, CPU, how busy the ledger's commit lock was, the heap held by in-flight events, and GC pauses. **Staging is shared: you get 12 benchmark runs in total**, and like any real benchmark the numbers are noisy.
 
-Change `config.json` only. Say "resolved" when the settings are in.
+Change `config.json` only. Say "resolved" when the settings are in, and say what p99 you expect at 13,000 events/s with them.
 
