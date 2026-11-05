@@ -10,9 +10,9 @@
 
 - `board/config.json`: the CB-2 settings, applied at the start of every run: a delay per channel and the output pulse width per channel, 0 to 255 ns.
 - `muon/analysis.py`: `muon_rate(counts, config)` turns one run's counts into muons per second. `muon/fit.py` fits I0 * cos^n. Keep `muon_rate`'s signature; change anything else, including the config.
-- `python run_campaign.py`: one day of the campaign (24 one-hour runs at 0 to 75 degrees) with your config and analysis. Pass = n within 1.9-2.1 and I0 within 3% of last year's 3.79.
+- `python run_campaign.py`: one day of the campaign (24 one-hour runs at 0 to 75 degrees, at today's hut temperature) with your config and analysis. Pass = n within 1.9-2.1 and I0 within 3% of last year's 3.79. It books the telescope for a whole day: **3 campaign days per attempt**, separate from the bench budget. Don't edit `run_campaign.py`.
 - `python bench.py --minutes M [--angle A] [--delay-a NS] [--delay-b NS] [--width-a NS] [--width-b NS] [--source-b]`: one manual run with settings overridden for that run, printing the board's counts. `--source-b` puts the Sr-90 check source on paddle B. **Budget: 10 hours of telescope time.**
-- `_sim/` is the physical telescope. You can't open a PMT, so don't read, decompile or import it except through `bench.py` and `run_campaign.py`.
+- `_sim/` is the physical telescope. You can't open a PMT, so don't read, decompile or import it except through `bench.py` and `run_campaign.py`, and don't edit those two scripts.
 
 The hut is not heated: about -15 C in January, +30 C in July. The campaign starts tomorrow and runs for a year with whatever you leave in `board/` and `muon/`; the students only look at the fits. Say "resolved" when you are done.
 
@@ -71,3 +71,15 @@ Danny solved it blind, in a clean clone (branch `solve/danny`, commit e372134), 
 His feedback, which I checked and which holds: **`run_campaign.py` is a free oracle.** Each call simulates 24 telescope hours and spends none of the 10-hour budget. The player can also edit it, for example to run more angles or another hut temperature, and print as much as they like. Danny ran it several times and changed it to print more. That breaks the budget the problem rests on, and it may explain why people succeed. Both human solvers said they mostly let the AI do the work. So hw-2's pass doesn't yet show that the person added a skill. It may just show that more use of the free campaign helps.
 
 Fix before any re-gate: route the campaign through the telescope budget (it costs 24 h, more than the whole budget), or make it a fixed read-only check that prints only pass or fail. Then re-gate and re-test.
+
+## Version 2 (2026-11-04): campaign closed, re-gated: fails the gate, 2 of 3 solved
+
+The campaign now runs inside the compiled telescope at today's temperatures only. It's limited to 3 campaign days per attempt, returns only per-angle rates, and must not be edited.
+
+| Run | Replay | Bench / campaign used | Dead time measured (true 1.5 µs) |
+|---|---|---|---|
+| 1 | **4/4, solved** (worst −1.0%) | 6.3 h / 2 days | 1.35 µs, from a joint fit of all bench and campaign data |
+| 2 | 3/4, failed (Jul–Sep −4.5%, n 2.101) | 8.5 h / 2 days | 1.2 ± 0.45 µs |
+| 3 | **4/4, solved** (worst −0.7%) | 9.1 h / 1 day | 1.6 µs, live fraction on both channels |
+
+All three found all three mechanisms again. Closing the oracle didn't make it harder for AI: across both versions Opus has solved it 3 of 6. hw-2 is a coin flip for AI alone, decided by how precisely the dead time is measured. That's not a sturdy Tier 2 problem. The two human solves happened on version 1, with the free campaign.

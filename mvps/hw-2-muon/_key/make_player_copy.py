@@ -14,7 +14,7 @@ dest = os.path.abspath(sys.argv[1])
 if os.path.exists(dest):
     raise SystemExit(f"{dest} exists")
 shutil.copytree(ROOT, dest, ignore=shutil.ignore_patterns("_key", "__pycache__", ".captures_used",
-                                                           ".probes_used", ".shots_used", ".git*"))
+                                                           ".probes_used", ".shots_used", ".campaign_days", ".git*"))
 for d, _, files in os.walk(os.path.join(dest, "_sim")):
     for n in files:
         if n.endswith(".py"):

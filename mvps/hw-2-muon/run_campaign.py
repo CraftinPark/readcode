@@ -1,5 +1,6 @@
 """Runs one day of the zenith-angle campaign on the telescope with board/config.json and muon/analysis.py:
-24 one-hour runs, cycling 0, 15, 30, 45, 60, 75 degrees. Fits I0 * cos^n.
+24 one-hour runs, cycling 0, 15, 30, 45, 60, 75 degrees. Fits I0 * cos^n. It books the telescope for a
+whole day, so you get 3 campaign days per attempt (separate from the 10 hours of bench time).
 
 Pass = n within 1.9-2.1 and the vertical rate I0 within 3% of last year's 3.79 muons/s (same paddles, same site).
 
@@ -17,12 +18,8 @@ from muon.analysis import muon_rate  # noqa: E402
 from muon.fit import fit_cos_n, per_angle  # noqa: E402
 
 config = json.load(open(os.path.join(HERE, "board", "config.json")))
-runs = []
-for h in range(24):
-    hut_c = 12.0 + 3.0 * math.sin(2 * math.pi * (h - 9) / 24)
-    runs.append(telescope.run(config, [0, 15, 30, 45, 60, 75][h % 6], 3600, temp_c=hut_c, seed=f"today-{h}"))
-rates = [muon_rate(c, config) for c in runs]
-points = per_angle(runs, rates)
+points, day = telescope.campaign(config, muon_rate, per_angle, HERE)
+print(f"campaign day {day} of {telescope.CAMPAIGN_DAYS}")
 for ang, r, s in points:
     print(f"{ang:3d} deg: {r:7.3f} +- {s:.3f} muons/s")
 i0, n = fit_cos_n(points)

@@ -10,9 +10,9 @@
 >
 > Find settings that keep up with today's peak (12,000 events/s) **and** next quarter's (13,000 events/s), with p99 under 250 ms at both.
 
-The pool is `ingest/pool.py`, and its settings are in `config.json` (`workers`, `batch`, `prefetch`). The decode, enrich and commit work happens in a compiled extension owned by another team; there's no source. `python bench.py [--load N]` runs the pool on the staging cluster (same hardware as production) under replayed production traffic, using whatever is in `config.json`. **Staging is shared: you get 12 benchmark runs in total**, and like any real benchmark the numbers are noisy.
+The pool is `ingest/pool.py`, and its settings are in `config.json` (`workers`, `batch`, `prefetch`). The decode, enrich and commit work happens in a compiled extension owned by another team; there's no source. `python bench.py [--load N]` runs the pool on the staging cluster (same hardware as production) under replayed production traffic, using whatever is in `config.json`, and prints the pool's telemetry: throughput, latency, CPU, how busy the ledger's commit lock was, the heap held by in-flight events, and GC pauses. **Staging is shared: you get 12 benchmark runs in total**, and like any real benchmark the numbers are noisy.
 
-Change `config.json` only. Say "resolved" when the settings are in.
+Change `config.json` only. Say "resolved" when the settings are in, and say what p99 you expect at 13,000 events/s with them.
 
 ## After "resolved" (hidden from the player)
 
@@ -80,3 +80,17 @@ What this says:
 - Human with AI so far: 0 of 1. The planned strategy's 50/80 is still the only evidence that it can be solved.
 - The critique is fair. The bench prints only throughput, p50, p99 and cpu %. So the knobs' meaning never pays off, and the problem rewards search tactics, not understanding of the system. That fails the "Learning" assumption even when it fails AI.
 - Fix to try: print the telemetry a real engineer would read, such as commit-lock wait %, GC pause time and heap in use. Understanding the system then shows the bottleneck in 1–2 runs, while blind search still runs out of budget. Also ask for a graded prediction, for example "p99 at 14k with your config", so the model is tested, not the guess.
+
+## Version 2 (2026-11-04): telemetry added, re-gated: still passes, 0 of 3
+
+After Danny's feedback, `bench.py` now also prints how much of the time the ledger commit lock is held, the heap held by in-flight events, and GC pauses (full collections with the longest pause, or young-generation only). The ticket also asks for the p99 the player expects at 13k. Nothing else changed: same model, same 12 runs, same replay.
+
+| Run | Final config | True p99 at 12k / 13k | Its prediction at 13k | What happened |
+|---|---|---|---|---|
+| 1 | 14 / 80 / 5 | 176 / **264** ms, failed (closest) | 250–310 ms | Found all three effects and pinned the GC cliff within a few MB, then chose batch 80, too big. |
+| 2 | 12 / 50 / 4 | 232 / **426** ms, failed | 350–400 ms | Cut prefetch to 4 for heap headroom and stayed at batch 50; the commit lock still binds. |
+| 3 | 12 / 100 / 5 | 155 / **~290** ms, failed | ~290 ms | Same pattern as run 1, with batch 100. |
+
+With telemetry, every run named every mechanism correctly: contention past about 12–14 workers, the commit lock, the GC limit at about 250–270 MB, and prefetch starvation. Every run also reported "not resolved" honestly, with a well-calibrated prediction. The new failure is the trade-off itself. To relieve the lock, each run jumped to batch 80–100, and to stay under the heap limit it cut prefetch. Bigger batches add latency of their own, and lower prefetch costs CPU. None tried the middle: batch about 60 with prefetch 7–8 at 12–14 workers. Two of the three again said 13k probably needs changes outside the config.
+
+What this says: understanding the system now pays off; it took Opus from 1 mechanism per run to all 4. But it isn't enough on its own. The remaining step is weighing three costs against each other under a budget, which is the judgement the problem is meant to grade. Next: a human attempt on this version.

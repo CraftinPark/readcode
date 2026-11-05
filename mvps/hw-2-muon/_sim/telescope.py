@@ -14,6 +14,7 @@ The hidden truth, which a player can only learn by running the telescope:
 import base64
 import json
 import math
+import os
 import random
 
 _P = json.loads(base64.b64decode(
@@ -70,3 +71,21 @@ def run(config, angle_deg, seconds, temp_c=TODAY_C, source_b=False, seed=None):
 def vertical_truth():
     """Muons per second through both paddles, vertical, as last year's analysis reported it."""
     return _P["mu0"] * _P["ea"] * _P["eb"]
+
+
+CAMPAIGN_DAYS = 3
+
+
+def campaign(config, rate_fn, per_angle_fn, root):
+    """One day of the campaign at today's hut temperatures: 24 one-hour runs, cycling 0-75 degrees. Books the
+    telescope for a whole day, so each attempt gets 3. Returns only the per-angle rates, not the runs."""
+    used_path = os.path.join(root, ".campaign_days")
+    used = int(open(used_path).read()) if os.path.exists(used_path) else 0
+    if used >= CAMPAIGN_DAYS:
+        raise SystemExit(f"campaign days used up ({CAMPAIGN_DAYS}/{CAMPAIGN_DAYS}): the telescope is booked.")
+    open(used_path, "w").write(str(used + 1))
+    runs = []
+    for h in range(24):
+        hut_c = TODAY_C + 3.0 * math.sin(2 * math.pi * (h - 9) / 24)
+        runs.append(run(config, [0, 15, 30, 45, 60, 75][h % 6], 3600, temp_c=hut_c, seed=f"today-{used}-{h}"))
+    return per_angle_fn(runs, [rate_fn(c, config) for c in runs]), used + 1

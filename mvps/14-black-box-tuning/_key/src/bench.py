@@ -37,9 +37,16 @@ def run(root, load):
     p50 *= r.lognormvariate(0, 0.06)
     p99 *= r.lognormvariate(0, 0.12)
     util = min(100.0, util * r.uniform(0.97, 1.03))
+    lock = min(100.0, 100 * done * 0.0035 / b) * r.uniform(0.97, 1.03)
+    heap = w * p * b * 0.04 * r.uniform(0.95, 1.05)
+    if w * p * b * 0.04 > 256:
+        gc = f"full collections, longest pause {260 * (1 + (w * p * b * 0.04 - 256) / 256) * r.uniform(0.9, 1.1):,.0f} ms"
+    else:
+        gc = "young-generation only, pauses under 5 ms"
     lines = [f"config: workers={w} batch={b} prefetch={p}   offered load: {load} events/s for 10 min",
              f"  processed: {done:,.0f} events/s" + ("   (falling behind: backlog growing)" if thr < load else ""),
              f"  latency p50: {p50:,.0f} ms   p99: {p99:,.0f} ms",
-             f"  cpu: {util:.0f}%",
+             f"  cpu: {min(100.0, util):.0f}%   ledger commit lock: held {min(100.0, lock):.0f}% of the time",
+             f"  heap: {heap:,.0f} MB of events in flight   gc: {gc}",
              f"(benchmark run {used + 1}/{BUDGET})"]
     return "\n".join(lines)
