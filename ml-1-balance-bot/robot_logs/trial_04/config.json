@@ -1,0 +1,5 @@
+{
+ "control_hz": 300,
+ "tilt_filter_tau_s": 0.35,
+ "action_smoothing": 0.0
+}
