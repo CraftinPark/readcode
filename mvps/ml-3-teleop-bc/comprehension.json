@@ -1,0 +1,76 @@
+{
+  "problem": "ml-3-teleop-bc",
+  "instructions": "Answer from the code as shipped (the answers do not depend on your fix). One option per question. Submit as {\"Q1\": \"B\", ...}.",
+  "questions": [
+    {
+      "id": "Q1",
+      "prompt": "A bench rollout is at policy step 20 (the policy has been queried at steps 0 to 20). How many chunk predictions are averaged into the position command sent at step 20, and which of them has the largest weight?",
+      "options": {
+        "A": "10 predictions; the one made at step 20 has the largest weight",
+        "B": "10 predictions; the one made at step 11 has the largest weight",
+        "C": "1 prediction: the chunk made at step 20 is executed open-loop, so nothing is averaged",
+        "D": "2 predictions, one per observation-history slot, weighted equally"
+      }
+    },
+    {
+      "id": "Q2",
+      "prompt": "While aligning an episode, the operator's trigger goes from 0 to 1 at a leader sample stamped 2.437 s, and the policy grid has points at 2.4 s and 2.5 s (all times on the same clock). What gripper targets do the frames at 2.4 s and 2.5 s get?",
+      "options": {
+        "A": "0.37 and 1.0 (linear interpolation between leader samples)",
+        "B": "1 and 1 (the grid takes the next leader sample at or after each point)",
+        "C": "0 and 1",
+        "D": "0 and 0 (the change shows up one frame later, at 2.6 s)"
+      }
+    },
+    {
+      "id": "Q3",
+      "prompt": "Take the last aligned frame of an episode, with a fresh camera reading. It becomes a training sample with a 10-step action chunk. How many of those 10 chunk steps contribute to the training loss?",
+      "options": {
+        "A": "1, for both the position term and the gripper term",
+        "B": "10: the steps past the end repeat the last action, which is the correct target for a robot that should stay put",
+        "C": "1 for the position term, 10 for the gripper term",
+        "D": "0: a frame whose chunk runs past the end of the episode is not turned into a sample"
+      }
+    },
+    {
+      "id": "Q4",
+      "prompt": "When evaluate.py runs a trained checkpoint, where do the mean and standard deviation used to normalise the policy's inputs come from?",
+      "options": {
+        "A": "They are recomputed from data/demos each time evaluate.py starts",
+        "B": "From all kept episodes, train and validation together, saved in the checkpoint",
+        "C": "From the train-split episodes, but only the position columns: the other observation columns are passed through unnormalised",
+        "D": "From the frames of the train-split episodes that have a usable camera reading, saved in the checkpoint and read back by the runner"
+      }
+    },
+    {
+      "id": "Q5",
+      "prompt": "Episode 108 in data/demos produces no training or validation samples. Why?",
+      "options": {
+        "A": "Its camera stream has a gap longer than the 0.25 s limit",
+        "B": "The span where all three streams have data is shorter than the 4.0 s minimum",
+        "C": "Fewer than 80% of its camera frames detected the block",
+        "D": "It lands in the validation split, which is only used for the loss curve"
+      }
+    },
+    {
+      "id": "Q6",
+      "prompt": "On the bench, the block detector misses the block on some camera frames. On a policy step where the newest frame has no detection, what reaches the network's block_x / block_y inputs?",
+      "options": {
+        "A": "The position from the most recent frame that had a detection",
+        "B": "A linear interpolation between the detections before and after the miss, as in training",
+        "C": "NaN, which the normaliser turns into NaN outputs and the step is skipped",
+        "D": "Nothing: the runner repeats the previous command without querying the network"
+      }
+    },
+    {
+      "id": "Q7",
+      "prompt": "At the first policy step of a bench episode (right after reset), what fills the 'previous step' slot of the observation history, and is that consistent with how training samples were built?",
+      "options": {
+        "A": "Zeros; training also pads with zeros",
+        "B": "The last observation of the previous episode, because the history is a deque that survives between episodes; training has no equivalent",
+        "C": "A copy of the current observation; training also repeats frame 0 for the first frame",
+        "D": "The normaliser's mean (zeros after normalisation); training repeats frame 0, so the two differ"
+      }
+    }
+  ]
+}

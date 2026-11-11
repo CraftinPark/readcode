@@ -1,0 +1,65 @@
+{
+  "case": "checkout-conversion-drop-3",
+  "session": "64c5b874",
+  "minutes": 5,
+  "clock": "Thu 09:05",
+  "actions": [
+    {
+      "minute": 5,
+      "action": "resolve",
+      "args": []
+    }
+  ],
+  "harm": [],
+  "report": {
+    "answer": {
+      "change": "CH-2210",
+      "mechanism": "C",
+      "segment": "Northfield Bank"
+    },
+    "correct": {
+      "change": "CH-2210",
+      "mechanism": "C",
+      "segment": "Northfield Bank"
+    },
+    "exact": {
+      "change": true,
+      "mechanism": true,
+      "segment": true
+    },
+    "cause_right": true,
+    "mechanism_text": "Our client's request timeout is now shorter than this issuer's authorization time, so it gives up while Cardline approves and captures",
+    "fix": null,
+    "fix_held": false,
+    "replay": [
+      "No production fix was live: Northfield payments kept timing out all day."
+    ],
+    "patch": {
+      "passed": true,
+      "tests": {
+        "slow_payment_that_went_through_is_reported_as_paid": true,
+        "tapping_pay_again_after_an_error_never_charges_twice": true,
+        "another_card_after_a_decline_can_pay": true,
+        "unreachable_cardline_is_an_error_and_charges_nothing": true,
+        "declines_are_unchanged": true,
+        "different_orders_are_charged_separately": true,
+        "fast_payments_are_unchanged": true
+      }
+    },
+    "declared": "09:05",
+    "declared_ok": false,
+    "out_of_scope": [],
+    "harm": [],
+    "revenue_lost": 5642,
+    "expert_minutes": 90,
+    "expert_revenue_lost": 1209,
+    "actions": [
+      {
+        "at": "09:05",
+        "action": "resolve",
+        "args": []
+      }
+    ],
+    "passed": false
+  }
+}

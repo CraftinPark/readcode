@@ -1,0 +1,81 @@
+{
+  "case": "checkout-conversion-drop",
+  "session": "8c259a31",
+  "minutes": 30,
+  "clock": "Thu 09:30",
+  "actions": [
+    {
+      "minute": 5,
+      "action": "deploys",
+      "args": []
+    },
+    {
+      "minute": 10,
+      "action": "errors",
+      "args": []
+    },
+    {
+      "minute": 15,
+      "action": "latency",
+      "args": []
+    },
+    {
+      "minute": 30,
+      "action": "set_timeout",
+      "args": [
+        "10000"
+      ]
+    }
+  ],
+  "harm": [],
+  "report": {
+    "cause": {
+      "you": "D",
+      "correct": "D",
+      "right": true,
+      "text": "Since Tuesday's config change, authorizations for Northfield cards time out on our side while Cardline still approves and captures them"
+    },
+    "timeout_fixed": true,
+    "patch": {
+      "passed": true,
+      "tests": {
+        "slow_payment_that_went_through_is_a_success": true,
+        "retry_after_a_timeout_never_charges_twice": true,
+        "timeout_with_no_payment_is_still_an_error": true,
+        "declines_are_unchanged": true,
+        "fast_payments_are_unchanged": true,
+        "different_orders_are_charged_separately": true
+      }
+    },
+    "minutes_to_fix": 30,
+    "revenue_lost": 403,
+    "expert_minutes": 40,
+    "expert_revenue_lost": 537,
+    "harm": [],
+    "actions": [
+      {
+        "at": "09:05",
+        "action": "deploys",
+        "args": []
+      },
+      {
+        "at": "09:10",
+        "action": "errors",
+        "args": []
+      },
+      {
+        "at": "09:15",
+        "action": "latency",
+        "args": []
+      },
+      {
+        "at": "09:30",
+        "action": "set_timeout",
+        "args": [
+          "10000"
+        ]
+      }
+    ],
+    "passed": true
+  }
+}

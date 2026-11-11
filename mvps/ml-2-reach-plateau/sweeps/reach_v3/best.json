@@ -1,0 +1,16 @@
+{
+  "note": "priya 2026-10-02, pre-refactor train_ppo.py, 3 seeds x 400k steps, eval_return mean of last 3 evals",
+  "params": {
+    "lr": 0.001,
+    "gamma": 0.97,
+    "gae_lambda": 0.95,
+    "update_epochs": 10,
+    "n_minibatches": 4,
+    "ent_coef": 0.0,
+    "n_envs": 16,
+    "n_steps": 64
+  },
+  "score_mean": 61.8,
+  "score_by_seed": [60.9, 66.2, 58.3],
+  "runner_up": {"lr": 0.0005, "gamma": 0.97, "score_mean": 57.4}
+}

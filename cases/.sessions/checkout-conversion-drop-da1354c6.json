@@ -1,0 +1,85 @@
+{
+  "case": "checkout-conversion-drop",
+  "session": "da1354c6",
+  "minutes": 35,
+  "clock": "Thu 09:35",
+  "actions": [
+    {
+      "minute": 5,
+      "action": "breakdown",
+      "args": [
+        "card_bank"
+      ]
+    },
+    {
+      "minute": 15,
+      "action": "trace",
+      "args": []
+    },
+    {
+      "minute": 20,
+      "action": "deploys",
+      "args": []
+    },
+    {
+      "minute": 35,
+      "action": "set_timeout",
+      "args": [
+        "10000"
+      ]
+    }
+  ],
+  "harm": [],
+  "report": {
+    "cause": {
+      "you": "D",
+      "correct": "D",
+      "right": true,
+      "text": "Payments for one bank's cards now time out on our side, though Cardline approves them, since the Tue config change"
+    },
+    "timeout_fixed": true,
+    "patch": {
+      "passed": true,
+      "tests": {
+        "slow_payment_that_went_through_is_a_success": true,
+        "retry_after_a_timeout_never_charges_twice": true,
+        "timeout_with_no_payment_is_still_an_error": true,
+        "declines_are_unchanged": true,
+        "fast_payments_are_unchanged": true,
+        "different_orders_are_charged_separately": true
+      }
+    },
+    "minutes_to_fix": 35,
+    "revenue_lost": 470,
+    "expert_minutes": 40,
+    "expert_revenue_lost": 537,
+    "harm": [],
+    "actions": [
+      {
+        "at": "09:05",
+        "action": "breakdown",
+        "args": [
+          "card_bank"
+        ]
+      },
+      {
+        "at": "09:15",
+        "action": "trace",
+        "args": []
+      },
+      {
+        "at": "09:20",
+        "action": "deploys",
+        "args": []
+      },
+      {
+        "at": "09:35",
+        "action": "set_timeout",
+        "args": [
+          "10000"
+        ]
+      }
+    ],
+    "passed": true
+  }
+}

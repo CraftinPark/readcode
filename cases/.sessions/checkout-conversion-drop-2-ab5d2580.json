@@ -1,0 +1,188 @@
+{
+  "case": "checkout-conversion-drop-2",
+  "session": "ab5d2580",
+  "minutes": 90,
+  "clock": "Thu 10:30",
+  "actions": [
+    {
+      "minute": 10,
+      "action": "query",
+      "args": [
+        "checkout.payment_conversion",
+        "by",
+        "country"
+      ]
+    },
+    {
+      "minute": 20,
+      "action": "query",
+      "args": [
+        "checkout.payment_conversion",
+        "by",
+        "issuer_bank"
+      ]
+    },
+    {
+      "minute": 30,
+      "action": "query",
+      "args": [
+        "payments.charge_errors",
+        "by",
+        "type"
+      ]
+    },
+    {
+      "minute": 40,
+      "action": "query",
+      "args": [
+        "payments.charge_duration_ms",
+        "by",
+        "issuer_bank",
+        "stat",
+        "p95"
+      ]
+    },
+    {
+      "minute": 50,
+      "action": "logs",
+      "args": [
+        "payments",
+        "wed",
+        "14:00"
+      ]
+    },
+    {
+      "minute": 55,
+      "action": "changes",
+      "args": []
+    },
+    {
+      "minute": 65,
+      "action": "show",
+      "args": [
+        "CH-1187"
+      ]
+    },
+    {
+      "minute": 75,
+      "action": "changelog",
+      "args": [
+        "cardline-sdk",
+        "5.0.0"
+      ]
+    },
+    {
+      "minute": 90,
+      "action": "set_config",
+      "args": [
+        "payments.authorize_timeout_ms",
+        "10000"
+      ]
+    }
+  ],
+  "harm": [],
+  "report": {
+    "cause": {
+      "you": "D",
+      "correct": "D",
+      "right": true,
+      "text": "Since Tuesday, payments for Northfield Bank cards time out in our client even though Cardline approves and captures them"
+    },
+    "timeout_fixed": true,
+    "patch": {
+      "passed": true,
+      "tests": {
+        "slow_payment_that_went_through_is_reported_as_paid": true,
+        "tapping_pay_again_after_an_error_never_charges_twice": true,
+        "another_card_after_a_decline_can_pay": true,
+        "unreachable_cardline_is_an_error_and_charges_nothing": true,
+        "declines_are_unchanged": true,
+        "different_orders_are_charged_separately": true,
+        "fast_payments_are_unchanged": true
+      }
+    },
+    "minutes_to_fix": 90,
+    "revenue_lost": 1209,
+    "expert_minutes": 75,
+    "expert_revenue_lost": 1008,
+    "harm": [],
+    "actions": [
+      {
+        "at": "09:10",
+        "action": "query",
+        "args": [
+          "checkout.payment_conversion",
+          "by",
+          "country"
+        ]
+      },
+      {
+        "at": "09:20",
+        "action": "query",
+        "args": [
+          "checkout.payment_conversion",
+          "by",
+          "issuer_bank"
+        ]
+      },
+      {
+        "at": "09:30",
+        "action": "query",
+        "args": [
+          "payments.charge_errors",
+          "by",
+          "type"
+        ]
+      },
+      {
+        "at": "09:40",
+        "action": "query",
+        "args": [
+          "payments.charge_duration_ms",
+          "by",
+          "issuer_bank",
+          "stat",
+          "p95"
+        ]
+      },
+      {
+        "at": "09:50",
+        "action": "logs",
+        "args": [
+          "payments",
+          "wed",
+          "14:00"
+        ]
+      },
+      {
+        "at": "09:55",
+        "action": "changes",
+        "args": []
+      },
+      {
+        "at": "10:05",
+        "action": "show",
+        "args": [
+          "CH-1187"
+        ]
+      },
+      {
+        "at": "10:15",
+        "action": "changelog",
+        "args": [
+          "cardline-sdk",
+          "5.0.0"
+        ]
+      },
+      {
+        "at": "10:30",
+        "action": "set_config",
+        "args": [
+          "payments.authorize_timeout_ms",
+          "10000"
+        ]
+      }
+    ],
+    "passed": true
+  }
+}

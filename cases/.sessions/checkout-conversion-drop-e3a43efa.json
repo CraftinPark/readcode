@@ -1,0 +1,29 @@
+{
+  "case": "checkout-conversion-drop",
+  "session": "e3a43efa",
+  "minutes": 15,
+  "clock": "Thu 09:15",
+  "actions": [
+    {
+      "minute": 5,
+      "action": "overview",
+      "args": []
+    },
+    {
+      "minute": 10,
+      "action": "breakdown",
+      "args": [
+        "card_bank"
+      ]
+    },
+    {
+      "minute": 15,
+      "action": "breakdown",
+      "args": [
+        "country"
+      ]
+    }
+  ],
+  "harm": [],
+  "report": null
+}

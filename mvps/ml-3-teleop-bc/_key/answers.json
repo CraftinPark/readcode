@@ -1,0 +1,44 @@
+{
+  "Q1": {
+    "answer": "B",
+    "files": ["policy/runner.py", "policy/ensemble.py", "config.py"],
+    "why": "The runner queries every step and adds each chunk; the ensembler keeps the last `chunk` = 10 (deque maxlen), so steps 11..20 all cover step 20 (offsets 9..0). Weights are exp(-m*i) over the list ordered oldest first, so i = 0 is the chunk from step 11.",
+    "distractors": {"A": "Reads the weights as favouring the newest prediction (the common ACT misreading).", "C": "Assumes chunked execution without ensembling (query every k steps).", "D": "Confuses obs_horizon = 2 with the ensemble."}
+  },
+  "Q2": {
+    "answer": "C",
+    "files": ["pipeline/episodes.py", "pipeline/sync.py"],
+    "why": "align_episode reads the trigger with sync.hold_last (zero-order hold, searchsorted side='right' - 1): at 2.4 s the latest leader sample at or before is still 0; at 2.5 s the 2.437 s sample (1) is the latest.",
+    "distractors": {"A": "Assumes the gripper goes through interp_linear like the positions.", "B": "Reads the hold as 'next sample'.", "D": "Off-by-one reading of side='right' - 1."}
+  },
+  "Q3": {
+    "answer": "A",
+    "files": ["pipeline/chunking.py", "policy/model.py"],
+    "why": "action_chunks pads past the end with the last action but sets mask False there; chunk_loss multiplies both the L1 and the BCE terms by the mask. For index T-1 only offset 0 is < T.",
+    "distractors": {"B": "Sees the padding but not the mask.", "C": "Thinks the mask only applies to the L1 term.", "D": "Thinks incomplete chunks are dropped (the docstring says the opposite)."}
+  },
+  "Q4": {
+    "answer": "D",
+    "files": ["pipeline/dataset.py", "pipeline/normalize.py", "policy/train.py", "policy/runner.py"],
+    "why": "load_demo_data fits Normalizer on train_frames only; fit uses f.obs[f.usable]; save_checkpoint stores normalizer.state_dict(); PolicyRunner.load rebuilds it from the checkpoint. All 7 observation columns are z-scored.",
+    "distractors": {"A": "evaluate.py never reads data/demos.", "B": "Misses that fit() gets train_frames only.", "C": "Mixes up the observation side (all columns) with the action side (gripper column left alone)."}
+  },
+  "Q5": {
+    "answer": "B",
+    "files": ["pipeline/episodes.py", "config.py", "tools/inspect_episode.py"],
+    "why": "align_episode raises Rejected('only 3.xx s where all streams have data') because the common window is under DataConfig.min_window_s = 4.0. Its camera gap (~0.045 s) and detection rate are fine. Holds for the shipped code and the reference fix alike.",
+    "distractors": {"A": "The camera-gap rejections are 17, 64, 101, 133.", "C": "No shipped episode fails min_detected.", "D": "Validation episodes do produce samples (the val tensors)."}
+  },
+  "Q6": {
+    "answer": "A",
+    "files": ["policy/runner.py", "evaluate.py", "sim/env.py", "pipeline/sync.py"],
+    "why": "The bench returns (NaN, False) on a dropout; PolicyRunner.act keeps self._last_block from the last detected frame and builds the observation from it. Training used sync.interp_valid, which interpolates between valid frames, so train and run time differ slightly here.",
+    "distractors": {"B": "Assumes run time can do what the offline pipeline does (it would need a future frame).", "C": "Misses the _last_block hold.", "D": "There is no skip path; the network is queried every step."}
+  },
+  "Q7": {
+    "answer": "C",
+    "files": ["policy/runner.py", "pipeline/chunking.py", "evaluate.py"],
+    "why": "rollout calls runner.reset(), which clears the history; _push then fills all obs_horizon slots with the first observation. chunking.obs_history clips indices to 0, so frame 0 repeats in training too.",
+    "distractors": {"A": "Common default elsewhere, not here.", "B": "Stale state across resets would happen without reset(); rollout calls it.", "D": "Invents a mean-padding path."}
+  }
+}

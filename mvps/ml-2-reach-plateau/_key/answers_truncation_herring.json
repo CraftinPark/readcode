@@ -1,0 +1,1 @@
+{"_expect_pass": false, "verdict": "bug", "file": "armrl/trainer.py", "start_line": 81, "end_line": 88, "q1": "a", "q2": "a", "q3": "c"}

@@ -1,0 +1,19 @@
+{
+  "episode_id": 37,
+  "operator": "op_b",
+  "rig_version": "2.1",
+  "start_ns": 89781819732450,
+  "task": {
+    "bin_xy": [
+      0.1870637686249852,
+      0.10689955529671477
+    ],
+    "cell": "cell-2"
+  },
+  "streams": {
+    "leader": 277,
+    "follower": 689,
+    "camera": 206
+  },
+  "notes": ""
+}

@@ -1,0 +1,248 @@
+{
+  "case": "checkout-conversion-drop-3",
+  "session": "a0ef65fb",
+  "minutes": 110,
+  "clock": "Thu 10:50",
+  "actions": [
+    {
+      "minute": 5,
+      "action": "changes",
+      "args": []
+    },
+    {
+      "minute": 15,
+      "action": "show",
+      "args": [
+        "CH-2210"
+      ]
+    },
+    {
+      "minute": 25,
+      "action": "packages",
+      "args": [
+        "payments",
+        "Mon"
+      ]
+    },
+    {
+      "minute": 35,
+      "action": "packages",
+      "args": [
+        "payments",
+        "Wed"
+      ]
+    },
+    {
+      "minute": 45,
+      "action": "changelog",
+      "args": [
+        "cardline-sdk",
+        "5.0.0"
+      ]
+    },
+    {
+      "minute": 50,
+      "action": "metrics",
+      "args": [
+        "payments."
+      ]
+    },
+    {
+      "minute": 60,
+      "action": "query",
+      "args": [
+        "payments.charge_duration_ms",
+        "by",
+        "issuer_bank",
+        "stat",
+        "p99"
+      ]
+    },
+    {
+      "minute": 75,
+      "action": "set_config",
+      "args": [
+        "payments.authorize_timeout_ms",
+        "15000"
+      ]
+    },
+    {
+      "minute": 85,
+      "action": "query",
+      "args": [
+        "payments.timeouts"
+      ]
+    },
+    {
+      "minute": 95,
+      "action": "query",
+      "args": [
+        "payments.charge_duration_ms",
+        "by",
+        "issuer_bank",
+        "stat",
+        "p99"
+      ]
+    },
+    {
+      "minute": 105,
+      "action": "search",
+      "args": [
+        "payments",
+        "payment unavailable",
+        "Thu"
+      ]
+    },
+    {
+      "minute": 110,
+      "action": "resolve",
+      "args": []
+    }
+  ],
+  "harm": [],
+  "report": {
+    "answer": {
+      "change": "CH-2210",
+      "mechanism": "C",
+      "segment": "Northfield Bank"
+    },
+    "correct": {
+      "change": "CH-2210",
+      "mechanism": "C",
+      "segment": "Northfield Bank"
+    },
+    "exact": {
+      "change": true,
+      "mechanism": true,
+      "segment": true
+    },
+    "cause_right": true,
+    "mechanism_text": "Our client's request timeout is now shorter than this issuer's authorization time, so it gives up while Cardline approves and captures",
+    "fix": {
+      "kind": "config",
+      "value": 15000,
+      "live_at": "10:15"
+    },
+    "fix_held": true,
+    "replay": [
+      "11:00 Cardline slowdown (+4 s for 25 min): timeouts rose briefly, then recovered.",
+      "12:00 routine payments deploy v318: settings kept; no change."
+    ],
+    "patch": {
+      "passed": true,
+      "tests": {
+        "slow_payment_that_went_through_is_reported_as_paid": true,
+        "tapping_pay_again_after_an_error_never_charges_twice": true,
+        "another_card_after_a_decline_can_pay": true,
+        "unreachable_cardline_is_an_error_and_charges_nothing": true,
+        "declines_are_unchanged": true,
+        "different_orders_are_charged_separately": true,
+        "fast_payments_are_unchanged": true
+      }
+    },
+    "declared": "10:50",
+    "declared_ok": true,
+    "out_of_scope": [],
+    "harm": [],
+    "revenue_lost": 1008,
+    "expert_minutes": 90,
+    "expert_revenue_lost": 1209,
+    "actions": [
+      {
+        "at": "09:05",
+        "action": "changes",
+        "args": []
+      },
+      {
+        "at": "09:15",
+        "action": "show",
+        "args": [
+          "CH-2210"
+        ]
+      },
+      {
+        "at": "09:25",
+        "action": "packages",
+        "args": [
+          "payments",
+          "Mon"
+        ]
+      },
+      {
+        "at": "09:35",
+        "action": "packages",
+        "args": [
+          "payments",
+          "Wed"
+        ]
+      },
+      {
+        "at": "09:45",
+        "action": "changelog",
+        "args": [
+          "cardline-sdk",
+          "5.0.0"
+        ]
+      },
+      {
+        "at": "09:50",
+        "action": "metrics",
+        "args": [
+          "payments."
+        ]
+      },
+      {
+        "at": "10:00",
+        "action": "query",
+        "args": [
+          "payments.charge_duration_ms",
+          "by",
+          "issuer_bank",
+          "stat",
+          "p99"
+        ]
+      },
+      {
+        "at": "10:15",
+        "action": "set_config",
+        "args": [
+          "payments.authorize_timeout_ms",
+          "15000"
+        ]
+      },
+      {
+        "at": "10:25",
+        "action": "query",
+        "args": [
+          "payments.timeouts"
+        ]
+      },
+      {
+        "at": "10:35",
+        "action": "query",
+        "args": [
+          "payments.charge_duration_ms",
+          "by",
+          "issuer_bank",
+          "stat",
+          "p99"
+        ]
+      },
+      {
+        "at": "10:45",
+        "action": "search",
+        "args": [
+          "payments",
+          "payment unavailable",
+          "Thu"
+        ]
+      },
+      {
+        "at": "10:50",
+        "action": "resolve",
+        "args": []
+      }
+    ],
+    "passed": true
+  }
+}

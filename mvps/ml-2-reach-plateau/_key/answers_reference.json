@@ -1,0 +1,1 @@
+{"_expect_pass": true, "verdict": "bug", "file": "armrl/buffer.py", "start_line": 80, "end_line": 83, "q1": "b", "q2": "a", "q3": "a"}

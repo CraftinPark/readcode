@@ -1,0 +1,87 @@
+{
+  "case": "checkout-conversion-drop",
+  "session": "2fe31429",
+  "minutes": 90,
+  "clock": "Thu 10:30",
+  "actions": [
+    {
+      "minute": 20,
+      "action": "support",
+      "args": []
+    },
+    {
+      "minute": 60,
+      "action": "rollback_redesign",
+      "args": []
+    },
+    {
+      "minute": 75,
+      "action": "restart",
+      "args": []
+    },
+    {
+      "minute": 90,
+      "action": "set_timeout",
+      "args": [
+        "5000"
+      ]
+    }
+  ],
+  "harm": [
+    "rolled back the checkout redesign (it wasn't the cause): 40 min lost, design team's launch undone",
+    "restarted the payments service mid-incident: ~150 in-flight checkouts dropped"
+  ],
+  "report": {
+    "cause": {
+      "you": "A",
+      "correct": "D",
+      "right": false,
+      "text": "Since Tuesday's config change, authorizations for Northfield cards time out on our side while Cardline still approves and captures them"
+    },
+    "timeout_fixed": false,
+    "patch": {
+      "passed": false,
+      "tests": {
+        "slow_payment_that_went_through_is_a_success": "AssertionError: {'ok': False, 'error': 'Something went wrong with your payment. Please try again.'}",
+        "retry_after_a_timeout_never_charges_twice": "AssertionError: 3",
+        "timeout_with_no_payment_is_still_an_error": true,
+        "declines_are_unchanged": true,
+        "fast_payments_are_unchanged": true,
+        "different_orders_are_charged_separately": true
+      }
+    },
+    "minutes_to_fix": null,
+    "revenue_lost": 1209,
+    "expert_minutes": 40,
+    "expert_revenue_lost": 537,
+    "harm": [
+      "rolled back the checkout redesign (it wasn't the cause): 40 min lost, design team's launch undone",
+      "restarted the payments service mid-incident: ~150 in-flight checkouts dropped"
+    ],
+    "actions": [
+      {
+        "at": "09:20",
+        "action": "support",
+        "args": []
+      },
+      {
+        "at": "10:00",
+        "action": "rollback_redesign",
+        "args": []
+      },
+      {
+        "at": "10:15",
+        "action": "restart",
+        "args": []
+      },
+      {
+        "at": "10:30",
+        "action": "set_timeout",
+        "args": [
+          "5000"
+        ]
+      }
+    ],
+    "passed": false
+  }
+}
